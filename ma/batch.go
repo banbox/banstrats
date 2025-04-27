@@ -62,8 +62,11 @@ func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			}
 			calcCorrs(jobs, false)
 		},
-		OnBatchInfos: func(jobs map[string]*strat.StratJob) {
-			jobList := utils.ValsOfMap(jobs)
+		OnBatchInfos: func(tf string, jobs map[string]*strat.JobEnv) {
+			jobList := make([]*strat.StratJob, 0, len(jobs))
+			for _, job := range jobs {
+				jobList = append(jobList, job.Job)
+			}
 			if jobList[0].IsWarmUp {
 				return
 			}
