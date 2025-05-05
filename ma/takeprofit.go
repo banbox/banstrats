@@ -10,8 +10,8 @@ import (
 // Just for demonstration, no trading, no registration required
 func takeprofit(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
-		WarmupNum: 100,
-		AllowTFs:  []string{"1h"},
+		WarmupNum:     100,
+		RunTimeFrames: []string{"1h"},
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
 				{"_cur_", "1m", 10},
