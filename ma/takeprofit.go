@@ -1,4 +1,4 @@
-package demo
+package ma
 
 import (
 	"github.com/banbox/banbot/config"
@@ -8,7 +8,7 @@ import (
 )
 
 // Just for demonstration, no trading, no registration required
-func stoploss(pol *config.RunPolicyConfig) *strat.TradeStrat {
+func takeprofit(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
 		WarmupNum: 100,
 		AllowTFs:  []string{"1h"},
@@ -22,23 +22,23 @@ func stoploss(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			c := e.Close.Get(0)
 			atr := ta.ATR(e.High, e.Low, e.Close, 14).Get(0)
 
-			// set stoploss when enter
+			// set takeprofit when enter
 			s.OpenOrder(&strat.EnterReq{
-				Tag:      "open",
-				StopLoss: c * 0.99,
-				//StopLoss: c * 1.01, // for short
-				//StopLossVal: c * 0.01 // Same effect
+				Tag:        "open",
+				TakeProfit: c * 1.01,
+				//TakeProfit: c * 0.99, // for short
+				//TakeProfitVal: c * 0.01 // Same effect
 			})
 
-			// use StopLossVal for stoploss range
+			// use TakeProfitVal for takeprofit range
 			s.OpenOrder(&strat.EnterReq{
-				Tag:         "open",
-				StopLossVal: atr * 2,
+				Tag:           "open",
+				TakeProfitVal: atr * 2,
 			})
 
-			// update stoploss on each bar (here is 1h)
+			// update takeprofit on each bar (here is 1h)
 			for _, od := range s.LongOrders {
-				od.SetStopLoss(&ormo.ExitTrigger{
+				od.SetTakeProfit(&ormo.ExitTrigger{
 					Price: c * 0.99,
 				})
 			}
@@ -47,9 +47,9 @@ func stoploss(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		OnInfoBar: func(s *strat.StratJob, e *ta.BarEnv, pair, tf string) {
 			c := e.Close.Get(0)
 			if tf == "1m" {
-				// Update stop loss every minute
+				// Update takeprofit every minute
 				for _, od := range s.LongOrders {
-					od.SetStopLoss(&ormo.ExitTrigger{
+					od.SetTakeProfit(&ormo.ExitTrigger{
 						Price: c * 0.99,
 					})
 				}

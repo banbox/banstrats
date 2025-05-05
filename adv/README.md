@@ -1,3 +1,4 @@
+[中文](README_cn.md)
 
 ## [draw any chart with chart.js](genAnyChart.go)
 start command:
