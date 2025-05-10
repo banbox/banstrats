@@ -16,6 +16,7 @@ func init() {
 		"demo2":      DemoInfo,
 		"demo_batch": BatchDemo,
 		"demo_exit":  CustomExitDemo,
+		"edit_pairs": editPairs,
 		"postApi":    PostApi,
 	})
 }

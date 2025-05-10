@@ -21,6 +21,9 @@ An example of tracking drawdown for take - profit. Exit the position when the ma
 ## [custom_exit](custom_exit.go)
 For orders, use more complex logic to control when to close the position.
 
+## [edit_pairs](edit_pairs.go)
+Listen to the list of varieties, modify or sort it arbitrarily and then return it. It can be used to dynamically control the list of varieties for trading.
+
 ## [batch](batch.go)
 An example of integrating multiple varieties, uniformly controlling and calculating global information, and then controlling the opening and closing of positions for certain varieties.
 
