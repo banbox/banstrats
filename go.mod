@@ -3,8 +3,8 @@ module github.com/banbox/banstrats
 go 1.23.0
 
 require (
-	github.com/banbox/banbot v0.2.15-beta.5
-	github.com/banbox/banexg v0.2.28-beta.2
+	github.com/banbox/banbot v0.2.15-beta.6
+	github.com/banbox/banexg v0.2.28
 	github.com/banbox/banta v0.2.1
 	go.uber.org/zap v1.27.0
 	gonum.org/v1/gonum v0.16.0

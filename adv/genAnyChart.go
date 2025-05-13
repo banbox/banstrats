@@ -7,8 +7,10 @@ import (
 	"github.com/banbox/banbot/orm"
 	"github.com/banbox/banbot/utils"
 	"github.com/banbox/banexg"
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +26,26 @@ import (
 
 //go:embed chartLine.html
 var chartTpl []byte
+
+func genChartDemo() {
+	values := make([]float64, 100)
+	labels := make([]string, 100)
+	for i := range values {
+		values[i] = math.Pow(float64(i), 1.5)
+		labels[i] = strconv.Itoa(i)
+	}
+	g := opt.Chart{
+		Labels: labels,
+		Datasets: []*opt.ChartDs{
+			{
+				Label:       "pow(x, 1.5)",
+				Data:        values,
+				BorderColor: "rgb(75, 192, 192)",
+			},
+		},
+	}
+	g.DumpFile("D:/dump_pairs2.html")
+}
 
 // GenAnyChart 生成任意K线图表示例
 func genAnyChart(args []string) error {
