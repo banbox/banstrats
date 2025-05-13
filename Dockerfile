@@ -6,7 +6,6 @@ ENV BanStratDir=/ban/strats
 WORKDIR /ban/strats
 
 RUN git reset --hard HEAD && git pull origin main && \
-    go get -u github.com/banbox/banbot && \
     go mod tidy && \
     go build -o ../bot
 
