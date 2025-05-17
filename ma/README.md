@@ -27,5 +27,8 @@ Listen to the list of varieties, modify or sort it arbitrarily and then return i
 ## [batch](batch.go)
 An example of integrating multiple varieties, uniformly controlling and calculating global information, and then controlling the opening and closing of positions for certain varieties.
 
+## [websocket](websocket.go)
+Example of Subscribing to Exchange Websocket High-Frequency Data, supporting: K-lines, Order book depth, Tick trades
+
 ## [post_api](post_api.go)
 It demonstrates how to accept external data requests through a web API during live trading. This can be used for auxiliary judgment of trading strategies or directly for opening and closing positions. You can configure this API in TradingView to enable automatic order placement. 

@@ -25,5 +25,8 @@
 ## [batch](batch.go)
 综合多个品种，统一控制并计算全局信息，然后控制某些品种开仓平仓的例子
 
+## [websocket](websocket.go)
+订阅交易所Websocket高频数据的示例，支持：K线，订单簿深度，逐笔交易
+
 ## [post_api](post_api.go)
 演示如何在实盘时，通过web api接受外部数据请求，用于策略辅助判断或直接开平仓，您可从TradingView中配置此api以便自动下单
