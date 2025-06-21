@@ -2,11 +2,13 @@ package ma
 
 import (
 	"fmt"
+	"github.com/banbox/banbot/biz"
 	"github.com/banbox/banbot/config"
 	"github.com/banbox/banbot/core"
 	"github.com/banbox/banbot/strat"
 	"github.com/banbox/banexg"
 	"github.com/banbox/banexg/log"
+	"go.uber.org/zap"
 )
 
 func ws(p *config.RunPolicyConfig) *strat.TradeStrat {
@@ -22,6 +24,11 @@ func ws(p *config.RunPolicyConfig) *strat.TradeStrat {
 		},
 		OnWsKline: func(s *strat.StratJob, pair string, k *banexg.Kline) {
 			log.Info(fmt.Sprintf("OnWsKline %v: %v", k.Time, k.Close))
+			s.OpenOrder(&strat.EnterReq{Tag: "long"})
+			_, _, err := biz.GetOdMgr(s.Account).ProcessOrders(nil, s)
+			if err != nil {
+				log.Error("process order fail", zap.Error(err))
+			}
 		},
 		OnWsTrades: func(s *strat.StratJob, pair string, trades []*banexg.Trade) {
 			last := trades[len(trades)-1]
