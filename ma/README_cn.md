@@ -30,3 +30,6 @@
 
 ## [post_api](post_api.go)
 演示如何在实盘时，通过web api接受外部数据请求，用于策略辅助判断或直接开平仓，您可从TradingView中配置此api以便自动下单
+
+## [ta_undo](ta_undo.go)
+演示如何在未完成K线中使用banta技术指标。
