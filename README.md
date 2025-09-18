@@ -6,6 +6,7 @@ This repo contains free strategies for [banbot](https://github.com/banbox/banbot
 | Directory                  | Description                                               |
 |----------------------------|-----------------------------------------------------------|
 | [ma](ma/README.md)         | Example strategies & various examples                     |
+| [idea](idea/README.md)     | Classic Strategy                                          |
 | [grid](grid/README.md)     | Grid trading strategies                                   |
 | [adv](adv/README.md)       | Examples of advanced usage of banbot                      |
 | [rpc_ai](rpc_ai/README.md) | Interaction with Python via gRPC, supporting ML/DL models |

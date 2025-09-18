@@ -6,6 +6,7 @@
 | 文件夹                           | 说明                        |
 |-------------------------------|---------------------------|
 | [ma](ma/README_cn.md)         | 示例策略&各种例子                 |
+| [idea](idea/README_cn.md)     | 经典策略                      |
 | [grid](grid/README_cn.md)     | 网格策略                      |
 | [adv](adv/README_cn.md)       | banbot高级用法示例              |
 | [rpc_ai](rpc_ai/README_cn.md) | 通过grpc与python交互，支持ML/DL模型 |
