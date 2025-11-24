@@ -11,12 +11,14 @@ func init() {
 	// 注册策略到banbot中，后续在配置文件中使用ma:demo即可引用此策略
 	// `init`函数是go中的特殊函数，会在当前包被导入时立刻执行
 	strat.AddStratGroup("ma", map[string]strat.FuncMakeStrat{
+		"dca":        DCA,
 		"demo":       Demo,
 		"demo_er":    DemoER,
 		"demo2":      DemoInfo,
 		"demo_batch": BatchDemo,
 		"demo_exit":  CustomExitDemo,
 		"edit_pairs": editPairs,
+		"trail_stop": TrailStop,
 		"ws":         ws,
 		"postApi":    PostApi,
 	})

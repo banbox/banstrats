@@ -33,3 +33,9 @@
 
 ## [ta_undo](ta_undo.go)
 演示如何在未完成K线中使用banta技术指标。
+
+## [DCA](dca.go)
+简单定投策略
+
+## [Trailing Stop](trailing_stop.go)
+跟踪止损示例

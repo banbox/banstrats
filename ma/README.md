@@ -36,3 +36,8 @@ It demonstrates how to accept external data requests through a web API during li
 ## [ta_undo](ta_undo.go)  
 It demonstrates how to use banta with unfinish kline.
 
+## [DCA](dca.go)
+Simple Dollar-Cost Averaging Strategy
+
+## [Trailing Stop](trailing_stop.go)
+Example of trailing stop loss
