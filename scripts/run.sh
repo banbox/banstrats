@@ -10,5 +10,11 @@ if [ -z "$(ls -A $TARGET)" ]; then
     cp -r $SOURCE/* $TARGET/
 fi
 
+# 检查配置文件是否存在
+if [ ! -f "/ban/data/config.yml" ] && [ ! -f "/ban/data/config.local.yml" ]; then
+    echo "running bot init..."
+    /ban/bot init
+fi
+
 # 运行原本的 CMD
 exec "$@"

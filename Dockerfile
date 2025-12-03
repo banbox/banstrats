@@ -11,7 +11,7 @@ RUN git reset --hard HEAD && git pull origin main && \
   go mod tidy && \
   go build -o ../bot
 
-RUN chmod +x /ban/bot && /ban/bot init && \
+RUN chmod +x /ban/bot && \
   chmod +x /ban/strats_init/scripts/run.sh
 
 EXPOSE 8000 8001
