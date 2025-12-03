@@ -3,8 +3,8 @@ github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwTo
 github.com/andybalholm/brotli v1.2.0/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/anyongjin/go-bayesopt v1.0.2 h1:845NHAdxk4x1FxeOS5McoaWO33ZfE2AR434j9lnEHAM=
 github.com/anyongjin/go-bayesopt v1.0.2/go.mod h1:KB64n3O9sPBql6pPnOKh0w8bnOSG1TIMNb+9c/9iQs0=
-github.com/banbox/banbot v0.2.28-beta.2 h1:Z23RR5Tqc36C4ND92UJsKYTr2ImnBU4IeRavRZdN4Co=
-github.com/banbox/banbot v0.2.28-beta.2/go.mod h1:qaQpYYShP2Z8m/ADDdmVFb//D/OJLxTyQJ6WdJ5/koI=
+github.com/banbox/banbot v0.2.28-beta.4 h1:rKGVwLByFS1z/hTjXnLm/e4+M/DGB8xHSeUaXeVmvs4=
+github.com/banbox/banbot v0.2.28-beta.4/go.mod h1:qaQpYYShP2Z8m/ADDdmVFb//D/OJLxTyQJ6WdJ5/koI=
 github.com/banbox/banexg v0.2.37 h1:oUWBjzFCO2IOclWZ/2zq/5scYSkHxk3Wte/HruEYrqQ=
 github.com/banbox/banexg v0.2.37/go.mod h1:T9JWRGblxAibQjwKK6VABG+r87y1LRnyYe7sz5aBnR4=
 github.com/banbox/banta v0.3.5 h1:hmy7SOdSTK48MBFaNVJfFtCsZqPa2FrfKpfjY/gzJgY=
