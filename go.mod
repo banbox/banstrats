@@ -5,8 +5,8 @@ go 1.24.0
 toolchain go1.24.9
 
 require (
-	github.com/banbox/banbot v0.2.28
-	github.com/banbox/banexg v0.2.37
+	github.com/banbox/banbot v0.2.29-beta.3
+	github.com/banbox/banexg v0.2.38
 	github.com/banbox/banta v0.3.5
 	go.uber.org/zap v1.27.0
 	gonum.org/v1/gonum v0.16.0
