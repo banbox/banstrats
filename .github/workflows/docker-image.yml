@@ -16,13 +16,9 @@ jobs:
     - name: Extract version from go.mod
       id: get-version
       run: |
-        if grep -q "github.com/banbox/banbot" go.mod; then
-          VERSION=$(grep "github.com/banbox/banbot" go.mod | awk '{print $2}')
-          if [ -n "$VERSION" ]; then
-            echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
-          else
-            echo "version=latest" >> $GITHUB_OUTPUT
-          fi
+        VERSION=$(grep "github.com/banbox/banbot " go.mod | awk '{print $2}' | sed 's/^v//' | tr -d '[:space:]')
+        if [ -n "$VERSION" ]; then
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
         else
           echo "version=latest" >> $GITHUB_OUTPUT
         fi
