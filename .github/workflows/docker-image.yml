@@ -17,9 +17,9 @@ jobs:
       id: get-version
       run: |
         if grep -q "github.com/banbox/banbot" go.mod; then
-          VERSION=$(grep "github.com/banbox/banbot" go.mod | awk '{print $2}' | tr -d 'v')
+          VERSION=$(grep "github.com/banbox/banbot" go.mod | awk '{print $2}')
           if [ -n "$VERSION" ]; then
-            echo "version=v$VERSION" >> $GITHUB_OUTPUT
+            echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
           else
             echo "version=latest" >> $GITHUB_OUTPUT
           fi
