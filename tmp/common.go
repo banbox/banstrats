@@ -10,5 +10,6 @@ func init() {
 		"limit":    LimitOrder,
 		"demo":     Demo,
 		"chg_pair": ChangePair,
+		"llm_run":  LLMRun,
 	})
 }
