@@ -8,8 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// LimitOrder 限价单策略：当没有订单时，按价格的90%创建限价单，3个bar未成交则取消
-func LimitOrder(pol *config.RunPolicyConfig) *strat.TradeStrat {
+// TriggerEnt 触发入场：当没有订单时，按价格的90%创建限价单，3个bar未成交则取消
+func TriggerEnt(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
 		WarmupNum: 0,
 		OnBar: func(s *strat.StratJob) {
@@ -28,11 +28,10 @@ func LimitOrder(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			log.Info("trigger at", zap.Float64("price", limitPrice))
 			// 创建限价买入订单，使用StopBars设置3个bar后自动取消
 			s.OpenOrder(&strat.EnterReq{
-				Tag: "test",
-				// Short: true,
-				// Stop:  limitPrice,
-				Limit:    limitPrice, // 限价单价格
-				StopBars: 3,          // 3个bar未成交则取消
+				Tag:      "test",
+				Short:    true,
+				Stop:     limitPrice,
+				StopBars: 5, // 5个bar未成交则取消
 			})
 		},
 		OnOrderChange: func(s *strat.StratJob, od *ormo.InOutOrder, chgType int) {

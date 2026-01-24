@@ -11,5 +11,6 @@ func init() {
 		"demo":     Demo,
 		"chg_pair": ChangePair,
 		"llm_run":  LLMRun,
+		"trigger":  TriggerEnt,
 	})
 }

@@ -6,11 +6,11 @@ toolchain go1.24.9
 
 // replace github.com/banbox/banbot => ../banbot
 
-//replace github.com/banbox/banexg => ../banexg
+// replace github.com/banbox/banexg => ../banexg
 
 require (
-	github.com/banbox/banbot v0.2.34
-	github.com/banbox/banexg v0.2.47
+	github.com/banbox/banbot v0.2.35
+	github.com/banbox/banexg v0.2.48
 	github.com/banbox/banta v0.3.6
 	go.uber.org/zap v1.27.0
 	gonum.org/v1/gonum v0.16.0
