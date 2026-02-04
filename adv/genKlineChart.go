@@ -3,6 +3,11 @@ package adv
 import (
 	_ "embed"
 	"fmt"
+	"html/template"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/banbox/banbot/config"
 	"github.com/banbox/banbot/utils"
 	"github.com/banbox/banexg/errs"
@@ -10,10 +15,6 @@ import (
 	utils2 "github.com/banbox/banexg/utils"
 	ta "github.com/banbox/banta"
 	"go.uber.org/zap"
-	"html/template"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 //go:embed klinechart.html
@@ -50,7 +51,7 @@ func genKlineChart(args *config.CmdArgs) *errs.Error {
 
 	for i, k := range klines {
 		// calculate indicators
-		e.OnBar(k.Time, k.Open, k.High, k.Low, k.Close, k.Volume, k.Info)
+		e.OnBar(k.Time, k.Open, k.High, k.Low, k.Close, k.Volume, k.BuyVolume)
 		kdjK, kdjD, _ := ta.KDJ(e.High, e.Low, e.Close, 9, 3, 3)
 
 		if i < warmUpNum {
