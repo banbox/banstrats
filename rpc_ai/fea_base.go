@@ -58,10 +58,10 @@ func pubFeaBase(exsList []*orm.ExSymbol, req *biz.SubReq, task *GenFeaTask) erro
 			for _, n := range nexts {
 				futs = append(futs, &n.Kline)
 			}
-			state.env.OnBar(bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Info)
+			state.env.OnBar(bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Quote, bar.BuyVolume, bar.TradeNum)
 			err = task.OnBar(state.env, &bar.Kline, futs)
 		} else {
-			state.envBig.OnBar(bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Info)
+			state.envBig.OnBar(bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Quote, bar.BuyVolume, bar.TradeNum)
 			err = task.OnInfoBar(state.envBig, &bar.Kline)
 		}
 		if err != nil {

@@ -2,6 +2,8 @@ package ma
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/banbox/banbot/btime"
 	"github.com/banbox/banbot/config"
 	"github.com/banbox/banbot/core"
@@ -11,12 +13,11 @@ import (
 	ta "github.com/banbox/banta"
 	"go.uber.org/zap"
 	"gonum.org/v1/gonum/floats"
-	"strings"
 )
 
 /*
 stamp := btime.UTCStamp() // latest time
-e := s.GetTmpEnv(stamp, k.Open, k.High, k.Low, k.Close, k.Volume, k.Info)
+e := s.GetTmpEnv(stamp, k.Open, k.High, k.Low, k.Close, k.Volume, k.Quote)
 ma5 := ta.SMA(e.Close, 5).Get(0)
 
 GetTmpEnv可返回一个临时的指标计算环境，传入的时间戳应当是此未完成数据的最新截止毫秒时间戳，针对每个品种+周期，仅保留一个临时指标环境，当传入更新的时间戳时，旧的环境会被舍弃。
@@ -32,7 +33,7 @@ func taUndo(p *config.RunPolicyConfig) *strat.TradeStrat {
 			s.More = [5]float64{}
 		},
 		OnWsKline: func(s *strat.StratJob, pair string, k *banexg.Kline) {
-			e := s.GetTmpEnv(btime.UTCStamp(), k.Open, k.High, k.Low, k.Close, k.Volume, k.Info)
+			e := s.GetTmpEnv(btime.UTCStamp(), k.Open, k.High, k.Low, k.Close, k.Volume, k.Quote, k.BuyVolume, k.TradeNum)
 			o1, h1, l1, c1, v1 := e.Open.Get(1), e.High.Get(1), e.Low.Get(1), e.Close.Get(1), e.Volume.Get(1)
 			h0, l0, c0, v0 := e.High.Get(0), e.Low.Get(0), e.Close.Get(0), e.Volume.Get(0)
 			pa := s.More.([5]float64)
