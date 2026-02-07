@@ -51,7 +51,7 @@ func genKlineChart(args *config.CmdArgs) *errs.Error {
 
 	for i, k := range klines {
 		// calculate indicators
-		e.OnBar(k.Time, k.Open, k.High, k.Low, k.Close, k.Volume, k.BuyVolume)
+		e.OnBar(k.Time, k.Open, k.High, k.Low, k.Close, k.Volume, k.Quote, k.BuyVolume, k.TradeNum)
 		kdjK, kdjD, _ := ta.KDJ(e.High, e.Low, e.Close, 9, 3, 3)
 
 		if i < warmUpNum {

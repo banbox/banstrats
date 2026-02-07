@@ -33,7 +33,7 @@ func taUndo(p *config.RunPolicyConfig) *strat.TradeStrat {
 			s.More = [5]float64{}
 		},
 		OnWsKline: func(s *strat.StratJob, pair string, k *banexg.Kline) {
-			e := s.GetTmpEnv(btime.UTCStamp(), k.Open, k.High, k.Low, k.Close, k.Volume, k.BuyVolume)
+			e := s.GetTmpEnv(btime.UTCStamp(), k.Open, k.High, k.Low, k.Close, k.Volume, k.Quote, k.BuyVolume, k.TradeNum)
 			o1, h1, l1, c1, v1 := e.Open.Get(1), e.High.Get(1), e.Low.Get(1), e.Close.Get(1), e.Volume.Get(1)
 			h0, l0, c0, v0 := e.High.Get(0), e.Low.Get(0), e.Close.Get(0), e.Volume.Get(0)
 			pa := s.More.([5]float64)
