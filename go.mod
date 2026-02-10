@@ -9,7 +9,7 @@ toolchain go1.24.9
 //replace github.com/banbox/banexg => ../banexg
 
 require (
-	github.com/banbox/banbot v0.3.0-beta.5
+	github.com/banbox/banbot v0.3.0-beta.19
 	github.com/banbox/banexg v0.2.51
 	github.com/banbox/banta v0.3.7
 	go.uber.org/zap v1.27.0
