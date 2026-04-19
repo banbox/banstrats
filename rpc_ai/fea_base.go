@@ -50,26 +50,44 @@ func pubFeaBase(exsList []*orm.ExSymbol, req *biz.SubReq, task *GenFeaTask) erro
 	}
 	var outErr *errs.Error
 	verCh := make(chan int, 5)
-	onBar := func(bar *orm.InfoKline, nexts []*orm.InfoKline) {
-		state := states[bar.Symbol]
+	onData := func(evt *orm.DataSeries, nexts []*orm.DataSeries) {
+		if evt == nil {
+			return
+		}
+		view, errView := evt.OHLCV(evt.ExSymbol)
+		if errView != nil {
+			outErr = errs.New(errs.CodeRunTime, errView)
+			verCh <- -1
+			return
+		}
+		state := states[view.Symbol()]
 		var err *errs.Error
-		if bar.TimeFrame == task.TfSml {
+		if view.TimeFrame == task.TfSml {
 			futs := make([]*banexg.Kline, 0, len(nexts))
 			for _, n := range nexts {
-				futs = append(futs, &n.Kline)
+				nextView, errView := n.OHLCV(n.ExSymbol)
+				if errView != nil {
+					outErr = errs.New(errs.CodeRunTime, errView)
+					verCh <- -1
+					return
+				}
+				if bar := nextView.Bar(); bar != nil {
+					futs = append(futs, bar)
+				}
 			}
-			state.env.OnBar(bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Quote, bar.BuyVolume, bar.TradeNum)
-			err = task.OnBar(state.env, &bar.Kline, futs)
+			state.env.OnBar(view.Time, view.Open, view.High, view.Low, view.Close, view.Volume, view.Quote, view.BuyVolume, view.TradeNum)
+			bar := view.Bar()
+			err = task.OnBar(state.env, bar, futs)
 		} else {
-			state.envBig.OnBar(bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Quote, bar.BuyVolume, bar.TradeNum)
-			err = task.OnInfoBar(state.envBig, &bar.Kline)
+			state.envBig.OnBar(view.Time, view.Open, view.High, view.Low, view.Close, view.Volume, view.Quote, view.BuyVolume, view.TradeNum)
+			err = task.OnInfoBar(state.envBig, view.Bar())
 		}
 		if err != nil {
 			outErr = err
 			verCh <- -1
 		}
 	}
-	err := biz.RunHistKline(&biz.RunHistArgs{
+	err := biz.RunHistSeries(&biz.RunHistSeriesArgs{
 		ExsList:     exsList,
 		Start:       req.Start,
 		End:         req.End,
@@ -78,16 +96,28 @@ func pubFeaBase(exsList []*orm.ExSymbol, req *biz.SubReq, task *GenFeaTask) erro
 			task.TfSml: task.WarmSml,
 			task.TfBig: task.WarmBig,
 		},
-		OnEnvEnd: func(bar *banexg.PairTFKline, adj *orm.AdjInfo) {
-			if bar != nil {
-				state := states[bar.Symbol]
+		OnEnvEnd: func(evt *orm.DataSeries) {
+			if evt != nil {
+				state := states[evt.Symbol()]
 				state.env.Reset()
 				state.envBig.Reset()
 			}
-			task.OnEnvEnd(bar, adj)
+			if task.OnEnvEnd != nil {
+				var pairTF *banexg.PairTFKline
+				var adj *orm.AdjInfo
+				if evt != nil {
+					if view, errView := evt.OHLCV(evt.ExSymbol); errView == nil {
+						if bar := view.Bar(); bar != nil {
+							pairTF = &banexg.PairTFKline{Symbol: view.Symbol(), TimeFrame: view.TimeFrame, Kline: *bar}
+						}
+						adj = view.Adj
+					}
+				}
+				task.OnEnvEnd(pairTF, adj)
+			}
 		},
-		VerCh: verCh,
-		OnBar: onBar,
+		VerCh:  verCh,
+		OnData: onData,
 	})
 	if err != nil {
 		return err
