@@ -218,7 +218,7 @@ func (m *Grid) CheckPos(s *strat.StratJob) {
 		}
 		hold := printAmts(holds, "hold: ")
 		take := printAmts(takes, "take: ")
-		m.log(e, cancel+jumpStr+openInfo+hold+take)
+		m.log(e, "%s", cancel+jumpStr+openInfo+hold+take)
 	}
 }
 
@@ -267,8 +267,8 @@ func (m *Grid) OnOrderChange(s *strat.StratJob, od *ormo.InOutOrder, chgType int
 func (m *Grid) log(e *ta.BarEnv, tpl string, args ...any) {
 	if e.TimeStart > m.barMS {
 		content := strings.Join(m.barLogs, "\n\t")
-		fmt.Printf(content)
-		fmt.Printf("\n")
+		fmt.Print(content)
+		fmt.Println()
 		date := btime.ToDateStr(e.TimeStart, core.DefaultDateFmt)
 		m.barLogs = []string{date + fmt.Sprintf(" h: %.2f l: %.2f c: %.2f",
 			e.High.Get(0), e.Low.Get(0), e.Close.Get(0))}

@@ -4,9 +4,9 @@ go 1.24.0
 
 toolchain go1.24.9
 
-//replace github.com/banbox/banbot => ../banbot
+replace github.com/banbox/banbot => ../banbot
 
-//replace github.com/banbox/banexg => ../banexg
+replace github.com/banbox/banexg => ../banexg
 
 require (
 	github.com/banbox/banbot v0.3.8

@@ -25,6 +25,22 @@ Please keep in mind, results will heavily depend on the symbols, timeframe and t
 ## Share your own strategies
 We welcome contributions of classic algorithmic trading strategies so that more people can quickly get started with banbot.
 
+## Third-party data regression proof pack
+For the Binance long/short example and the cross-repo framework seam, use the canonical hermetic proof-pack entrypoint:
+
+```bash
+bash scripts/verify_third_party_regression.sh
+```
+
+The script runs four fail-fast layers in order:
+
+1. `banstrats` example registration, fetch normalization, strategy, and `DataHub` proof.
+2. `banbot` framework bootstrap, history ensure, activation, and startup ordering proof.
+3. `banbot` legacy OHLCV compatibility and source-scoped cache/window proof.
+4. A broader hermetic sweep across the targeted `banbot` framework packages.
+
+Each layer prints the exact command before running it, then stops at the first failure so future agents can immediately localize whether the breakage is in the example package, framework startup/activation, or legacy compatibility/cache semantics.
+
 ## FAQ
 ### What is banbot?
 banbot is a free and open source crypto trading bot written in golang. It aims to provide a simple, easy-to-use, high-performance quantitative backtesting experience. 
