@@ -6,8 +6,8 @@ import (
 	"github.com/banbox/banbot/config"
 	"github.com/banbox/banbot/data"
 	"github.com/banbox/banbot/strat"
-	"github.com/banbox/banstrats/fundingrate"
-	"github.com/banbox/banstrats/longshort"
+	"github.com/banbox/banstrats/examples/fundingrate"
+	"github.com/banbox/banstrats/examples/longshort"
 )
 
 func TestMainBlankImportRegistersBinanceLongShortSource(t *testing.T) {

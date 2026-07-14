@@ -147,9 +147,5 @@ func getKline(exgName, market, symbol, tf, timeRange string) []*banexg.Kline {
 	if len(klines) == 0 {
 		panic(errs.NewMsg(errs.CodeRunTime, "no kline data got"))
 	}
-	legacyKlines, convErr := orm.SeriesToKLines(klines, exs)
-	if convErr != nil {
-		panic(convErr)
-	}
-	return legacyKlines
+	return klines
 }
