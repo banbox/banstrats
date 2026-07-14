@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strconv"
+	"sort"
 	"strings"
 
 	"github.com/banbox/banbot/data"
 	"github.com/banbox/banbot/exg"
 	"github.com/banbox/banbot/orm"
 	"github.com/banbox/banbot/strat"
-	"github.com/banbox/banexg"
 	banbinance "github.com/banbox/banexg/binance"
 	utils2 "github.com/banbox/banexg/utils"
 )
@@ -23,6 +22,9 @@ const (
 	EndpointMethod    = banbinance.MethodFapiDataGetTopLongShortPositionRatio
 	DefaultTimeframe  = "1d"
 	maxRecordsPerPage = 500
+	FieldLongAccount  = "longAccount"
+	FieldShortAccount = "shortAccount"
+	FieldRatio        = "longShortRatio"
 )
 
 var supportedPeriods = map[string]struct{}{
@@ -72,7 +74,7 @@ func RegisterDefaultSource() error {
 	if err != nil {
 		return err
 	}
-	return data.RegisterDataSource(src)
+	return data.RegisterFuncDataSource(src.Info(), src.FetchHistory, src.SubscribeLive)
 }
 
 func NewSource(timeframe string, fetchFunc FetchFunc) (*Source, error) {
@@ -100,9 +102,9 @@ func NewSource(timeframe string, fetchFunc FetchFunc) (*Source, error) {
 				EndColumn:  "end_ms",
 				SIDColumn:  "sid",
 				Fields: []orm.SeriesField{
-					{Name: "longQty", Type: "float", Role: "value"},
-					{Name: "shortQty", Type: "float", Role: "value"},
-					{Name: "longShortRatio", Type: "float", Role: "value"},
+					{Name: FieldLongAccount, Type: "float", Role: "value"},
+					{Name: FieldShortAccount, Type: "float", Role: "value"},
+					{Name: FieldRatio, Type: "float", Role: "value"},
 				},
 			},
 		},
@@ -161,7 +163,7 @@ func (s *Source) FetchHistory(ctx context.Context, sub *strat.DataSub, startMS, 
 	if endMS <= startMS {
 		return nil, s.wrapErr(sub, "request", "endTime must be greater than startTime")
 	}
-	rows := make([]*orm.DataRecord, 0)
+	rowsByTime := make(map[int64]*orm.DataRecord)
 	for cursor := startMS; cursor < endMS; {
 		pageEnd := cursor + s.tfMS*maxRecordsPerPage
 		if pageEnd > endMS {
@@ -179,9 +181,18 @@ func (s *Source) FetchHistory(ctx context.Context, sub *strat.DataSub, startMS, 
 		if err != nil {
 			return nil, err
 		}
-		rows = append(rows, pageRows...)
+		for _, row := range pageRows {
+			if row != nil && row.TimeMS >= startMS && row.TimeMS < endMS {
+				rowsByTime[row.TimeMS] = row
+			}
+		}
 		cursor = pageEnd
 	}
+	rows := make([]*orm.DataRecord, 0, len(rowsByTime))
+	for _, row := range rowsByTime {
+		rows = append(rows, row)
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].TimeMS < rows[j].TimeMS })
 	return rows, nil
 }
 
@@ -200,29 +211,11 @@ func (s *Source) SubscribeLive(ctx context.Context, subs []*strat.DataSub, sink 
 }
 
 func (s *Source) validateSub(sub *strat.DataSub) (*strat.DataSub, error) {
-	if sub == nil {
-		return nil, s.wrapErr(nil, "request", "data sub is required")
+	normalized, err := data.NormalizeDataSub(s.info, sub)
+	if err != nil {
+		return nil, s.wrapErr(sub, "request", "%v", err)
 	}
-	if sub.ExSymbol == nil {
-		return nil, s.wrapErr(sub, "request", "exsymbol is required")
-	}
-	if strings.TrimSpace(sub.ExSymbol.Symbol) == "" {
-		return nil, s.wrapErr(sub, "request", "symbol is required")
-	}
-	if sub.Source != "" && sub.Source != s.info.Name {
-		return nil, s.wrapErr(sub, "request", "unsupported source %q", sub.Source)
-	}
-	if sub.TimeFrame != "" && sub.TimeFrame != s.info.TimeFrame {
-		return nil, s.wrapErr(sub, "request", "unsupported timeframe %q", sub.TimeFrame)
-	}
-	copySub := *sub
-	if copySub.Source == "" {
-		copySub.Source = s.info.Name
-	}
-	if copySub.TimeFrame == "" {
-		copySub.TimeFrame = s.info.TimeFrame
-	}
-	return &copySub, nil
+	return normalized, nil
 }
 
 func (s *Source) buildRequest(sub *strat.DataSub, startMS, endMS int64) (FetchRequest, error) {
@@ -236,6 +229,10 @@ func (s *Source) buildRequest(sub *strat.DataSub, startMS, endMS int64) (FetchRe
 	if endMS <= startMS {
 		return FetchRequest{}, s.wrapErr(normalized, "request", "endTime must be greater than startTime")
 	}
+	symbol, err := binanceSymbol(normalized.ExSymbol.Symbol)
+	if err != nil {
+		return FetchRequest{}, s.wrapErr(normalized, "request", "%v", err)
+	}
 	limit := int(math.Ceil(float64(endMS-startMS) / float64(s.tfMS)))
 	if limit < 1 {
 		limit = 1
@@ -247,10 +244,10 @@ func (s *Source) buildRequest(sub *strat.DataSub, startMS, endMS int64) (FetchRe
 		Method:   s.method,
 		Endpoint: s.endpoint,
 		Params: map[string]interface{}{
-			"symbol":    normalized.ExSymbol.Symbol,
+			"symbol":    symbol,
 			"period":    s.info.TimeFrame,
 			"startTime": startMS,
-			"endTime":   endMS,
+			"endTime":   endMS - 1,
 			"limit":     limit,
 		},
 	}, nil
@@ -258,7 +255,7 @@ func (s *Source) buildRequest(sub *strat.DataSub, startMS, endMS int64) (FetchRe
 
 func (s *Source) normalizePayload(sub *strat.DataSub, payload []byte) ([]*orm.DataRecord, error) {
 	var raw []ratioRow
-	if err := json.Unmarshal(payload, &raw); err != nil {
+	if err := utils2.Unmarshal(payload, &raw, utils2.JsonNumDefault); err != nil {
 		return nil, s.wrapErr(sub, "parse", "invalid JSON payload: %v", err)
 	}
 	if len(raw) == 0 {
@@ -279,32 +276,35 @@ func (s *Source) normalizeRow(sub *strat.DataSub, idx int, item ratioRow) (*orm.
 	if strings.TrimSpace(item.Symbol) == "" {
 		return nil, s.wrapErr(sub, "parse", "row[%d] missing field symbol", idx)
 	}
-	if sub != nil && sub.ExSymbol != nil && strings.TrimSpace(sub.ExSymbol.Symbol) != "" && item.Symbol != sub.ExSymbol.Symbol {
-		return nil, s.wrapErr(sub, "parse", "row[%d] symbol %q does not match sub symbol %q", idx, item.Symbol, sub.ExSymbol.Symbol)
+	if sub != nil && sub.ExSymbol != nil && strings.TrimSpace(sub.ExSymbol.Symbol) != "" {
+		expected, err := binanceSymbol(sub.ExSymbol.Symbol)
+		if err != nil {
+			return nil, s.wrapErr(sub, "parse", "row[%d] %v", idx, err)
+		}
+		if item.Symbol != sub.ExSymbol.Symbol && item.Symbol != expected {
+			return nil, s.wrapErr(sub, "parse", "row[%d] symbol %q does not match sub symbol %q", idx, item.Symbol, sub.ExSymbol.Symbol)
+		}
 	}
-	timeMS, err := parseIntField(item.Timestamp, "timestamp")
+	timeMS, err := data.ParseJSONInt(item.Timestamp, "timestamp")
 	if err != nil {
 		return nil, s.wrapErr(sub, "parse", "row[%d] %v", idx, err)
 	}
-	longQty, err := parseFloatField(item.LongAccount, "longAccount")
+	longAccount, err := data.ParseJSONFloat(item.LongAccount, "longAccount")
 	if err != nil {
 		return nil, s.wrapErr(sub, "parse", "row[%d] %v", idx, err)
 	}
-	shortQty, err := parseFloatField(item.ShortAccount, "shortAccount")
+	shortAccount, err := data.ParseJSONFloat(item.ShortAccount, "shortAccount")
 	if err != nil {
 		return nil, s.wrapErr(sub, "parse", "row[%d] %v", idx, err)
 	}
-	ratio, err := parseFloatField(item.LongShortRatio, "longShortRatio")
+	ratio, err := data.ParseJSONFloat(item.LongShortRatio, "longShortRatio")
 	if err != nil {
 		return nil, s.wrapErr(sub, "parse", "row[%d] %v", idx, err)
 	}
 	values := map[string]any{
-		"longQty":        longQty,
-		"shortQty":       shortQty,
-		"longShortRatio": ratio,
-	}
-	if err := ensureDeclaredFields(s.info, values); err != nil {
-		return nil, s.wrapErr(sub, "mapping", "row[%d] %v", idx, err)
+		FieldLongAccount:  longAccount,
+		FieldShortAccount: shortAccount,
+		FieldRatio:        ratio,
 	}
 	return &orm.DataRecord{
 		TimeMS: timeMS,
@@ -314,57 +314,24 @@ func (s *Source) normalizeRow(sub *strat.DataSub, idx int, item ratioRow) (*orm.
 	}, nil
 }
 
-func ensureDeclaredFields(info *orm.SeriesInfo, values map[string]any) error {
-	for _, field := range info.Binding.Fields {
-		if _, ok := values[field.Name]; !ok {
-			return fmt.Errorf("missing declared field %q", field.Name)
+func binanceSymbol(symbol string) (string, error) {
+	symbol = strings.TrimSpace(symbol)
+	if symbol == "" {
+		return "", fmt.Errorf("symbol is required")
+	}
+	if exg.Default != nil {
+		if market, err := exg.Default.GetMarket(symbol); err == nil && market != nil && market.ID != "" {
+			return market.ID, nil
 		}
 	}
-	return nil
-}
-
-func parseFloatField(raw json.RawMessage, field string) (float64, error) {
-	if len(raw) == 0 {
-		return 0, fmt.Errorf("missing field %s", field)
+	baseQuote := strings.SplitN(symbol, ":", 2)[0]
+	if strings.Contains(baseQuote, "/") {
+		baseQuote = strings.ReplaceAll(baseQuote, "/", "")
 	}
-	var str string
-	if err := json.Unmarshal(raw, &str); err == nil {
-		if strings.TrimSpace(str) == "" {
-			return 0, fmt.Errorf("missing field %s", field)
-		}
-		val, err := strconv.ParseFloat(str, 64)
-		if err != nil {
-			return 0, fmt.Errorf("field %s is not numeric: %q", field, str)
-		}
-		return val, nil
+	if strings.ContainsAny(baseQuote, ":/ ") || baseQuote == "" {
+		return "", fmt.Errorf("cannot map symbol %q to Binance market id", symbol)
 	}
-	var num float64
-	if err := json.Unmarshal(raw, &num); err == nil {
-		return num, nil
-	}
-	return 0, fmt.Errorf("field %s is not numeric", field)
-}
-
-func parseIntField(raw json.RawMessage, field string) (int64, error) {
-	if len(raw) == 0 {
-		return 0, fmt.Errorf("missing field %s", field)
-	}
-	var num int64
-	if err := json.Unmarshal(raw, &num); err == nil {
-		return num, nil
-	}
-	var str string
-	if err := json.Unmarshal(raw, &str); err == nil {
-		if strings.TrimSpace(str) == "" {
-			return 0, fmt.Errorf("missing field %s", field)
-		}
-		val, err := strconv.ParseInt(str, 10, 64)
-		if err != nil {
-			return 0, fmt.Errorf("field %s is not an integer: %q", field, str)
-		}
-		return val, nil
-	}
-	return 0, fmt.Errorf("field %s is not an integer", field)
+	return baseQuote, nil
 }
 
 func (s *Source) wrapErr(sub *strat.DataSub, phase, format string, args ...any) error {
@@ -382,7 +349,4 @@ func (s *Source) wrapErr(sub *strat.DataSub, phase, format string, args ...any) 
 	return fmt.Errorf("source=%s symbol=%s timeframe=%s endpoint=%s phase=%s: %s", s.info.Name, symbol, tf, s.endpoint, phase, msg)
 }
 
-var (
-	_ data.DataSource = (*Source)(nil)
-	_                 = banexg.HttpRes{}
-)
+var _ data.DataSource = (*Source)(nil)

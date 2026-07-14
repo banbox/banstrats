@@ -29,7 +29,7 @@ func TestBinanceLongShortSourceInfo(t *testing.T) {
 	if src.method != EndpointMethod {
 		t.Fatalf("expected method %q, got %q", EndpointMethod, src.method)
 	}
-	wantFields := []string{"longQty", "shortQty", "longShortRatio"}
+	wantFields := []string{FieldLongAccount, FieldShortAccount, FieldRatio}
 	if len(info.Binding.Fields) != len(wantFields) {
 		t.Fatalf("expected %d fields, got %d", len(wantFields), len(info.Binding.Fields))
 	}
@@ -66,7 +66,7 @@ func TestBinanceLongShortFetchHistory(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewSource returned error: %v", err)
 		}
-		sub := validSub("BTCUSDT", DefaultTimeframe)
+		sub := validSub("BTC/USDT:USDT", DefaultTimeframe)
 		rows, err := src.FetchHistory(context.Background(), sub, 1704067200000, 1704240000000)
 		if err != nil {
 			t.Fatalf("FetchHistory returned error: %v", err)
@@ -80,7 +80,7 @@ func TestBinanceLongShortFetchHistory(t *testing.T) {
 		assertParamEqual(t, gotReq.Params, "symbol", "BTCUSDT")
 		assertParamEqual(t, gotReq.Params, "period", DefaultTimeframe)
 		assertParamEqual(t, gotReq.Params, "startTime", int64(1704067200000))
-		assertParamEqual(t, gotReq.Params, "endTime", int64(1704240000000))
+		assertParamEqual(t, gotReq.Params, "endTime", int64(1704239999999))
 		assertParamEqual(t, gotReq.Params, "limit", 2)
 		if len(rows) != 2 {
 			t.Fatalf("expected 2 rows, got %d", len(rows))
@@ -107,18 +107,37 @@ func TestBinanceLongShortFetchHistory(t *testing.T) {
 					t.Fatalf("row %d missing declared field %q in values: %+v", idx, field.Name, row.Values)
 				}
 			}
-			if got := row.Values["longQty"].(float64); got != wantLong {
-				t.Fatalf("row %d expected longQty=%v, got %v", idx, wantLong, got)
+			if got := row.Values[FieldLongAccount].(float64); got != wantLong {
+				t.Fatalf("row %d expected longAccount=%v, got %v", idx, wantLong, got)
 			}
-			if got := row.Values["shortQty"].(float64); got != wantShort {
-				t.Fatalf("row %d expected shortQty=%v, got %v", idx, wantShort, got)
+			if got := row.Values[FieldShortAccount].(float64); got != wantShort {
+				t.Fatalf("row %d expected shortAccount=%v, got %v", idx, wantShort, got)
 			}
-			if got := row.Values["longShortRatio"].(float64); got != wantRatio {
+			if got := row.Values[FieldRatio].(float64); got != wantRatio {
 				t.Fatalf("row %d expected longShortRatio=%v, got %v", idx, wantRatio, got)
 			}
 		}
 		assertRow(0, rows[0], 1704067200000, 0.5891, 0.4109, 1.4342)
 		assertRow(1, rows[1], 1704153600000, 0.5454, 0.4546, 1.2)
+	})
+
+	t.Run("filters sorts and deduplicates exchange rows", func(t *testing.T) {
+		src := mustSource(t, []byte(`[
+			{"symbol":"BTCUSDT","longShortRatio":"1.2","longAccount":"0.55","shortAccount":"0.45","timestamp":"1704153600000"},
+			{"symbol":"BTCUSDT","longShortRatio":"9","longAccount":"0.9","shortAccount":"0.1","timestamp":"1703980800000"},
+			{"symbol":"BTCUSDT","longShortRatio":"1.1","longAccount":"0.52","shortAccount":"0.48","timestamp":"1704067200000"},
+			{"symbol":"BTCUSDT","longShortRatio":"1.3","longAccount":"0.56","shortAccount":"0.44","timestamp":"1704153600000"}
+		]`), nil)
+		rows, err := src.FetchHistory(context.Background(), validSub("BTC/USDT:USDT", DefaultTimeframe), 1704067200000, 1704240000000)
+		if err != nil {
+			t.Fatalf("FetchHistory returned error: %v", err)
+		}
+		if len(rows) != 2 || rows[0].TimeMS != 1704067200000 || rows[1].TimeMS != 1704153600000 {
+			t.Fatalf("expected sorted unique in-range rows, got %+v", rows)
+		}
+		if got := rows[1].Values[FieldRatio]; got != 1.3 {
+			t.Fatalf("expected latest duplicate to win, got %v", got)
+		}
 	})
 
 	t.Run("multiple pages keep request ranges bounded", func(t *testing.T) {
@@ -143,12 +162,12 @@ func TestBinanceLongShortFetchHistory(t *testing.T) {
 		}
 		assertParamEqual(t, calls[0].Params, "limit", maxRecordsPerPage)
 		assertParamEqual(t, calls[0].Params, "startTime", start)
-		assertParamEqual(t, calls[0].Params, "endTime", start+int64(maxRecordsPerPage)*86400000)
+		assertParamEqual(t, calls[0].Params, "endTime", start+int64(maxRecordsPerPage)*86400000-1)
 		assertParamEqual(t, calls[1].Params, "limit", 1)
 		assertParamEqual(t, calls[1].Params, "startTime", start+int64(maxRecordsPerPage)*86400000)
-		assertParamEqual(t, calls[1].Params, "endTime", end)
-		if len(rows) != 2 {
-			t.Fatalf("expected one normalized row per page, got %d", len(rows))
+		assertParamEqual(t, calls[1].Params, "endTime", end-1)
+		if len(rows) != 1 {
+			t.Fatalf("expected duplicate page timestamps to be collapsed, got %d", len(rows))
 		}
 	})
 

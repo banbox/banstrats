@@ -14,7 +14,7 @@ func stoploss(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		RunTimeFrames: []string{"1h"},
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
-				{"_cur_", "1m", 10},
+				{Pair: "_cur_", TimeFrame: "1m", WarmupNum: 10},
 			}
 		},
 		OnBar: func(s *strat.StratJob) {

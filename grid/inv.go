@@ -38,7 +38,7 @@ func InvGrid(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		StopEnterBars: 9999999,
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
-				{"_cur_", "15m", 100},
+				{Pair: "_cur_", TimeFrame: "15m", WarmupNum: 100},
 			}
 		},
 		OnStartUp: func(s *strat.StratJob) {
@@ -47,7 +47,7 @@ func InvGrid(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		OnBar: func(s *strat.StratJob) {
 			m, _ := s.More.(*GridV1)
 			if s.OrderNum == 0 {
-				if math.IsNaN(m.Unit) || m.bigER >= 0.3 || s.IsWarmUp {
+				if m.Unit <= 0 || math.IsNaN(m.Unit) || math.IsInf(m.Unit, 0) || m.bigER >= 0.3 || s.IsWarmUp {
 					return
 				}
 				m.Open(s)

@@ -76,7 +76,7 @@ func CL01(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
 				//{"_cur_", smlTf, 30},
-				{"_cur_", bigTf, 300},
+				{Pair: "_cur_", TimeFrame: bigTf, WarmupNum: 300},
 			}
 		},
 		OnBar: func(s *strat.StratJob) {

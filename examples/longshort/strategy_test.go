@@ -2,7 +2,6 @@ package longshort
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/banbox/banbot/biz"
@@ -89,20 +88,20 @@ func TestBinanceLongShortStrategyOnDataAndDataHubProof(t *testing.T) {
 	if state.LastSource != SourceName || state.LastSid != job.Symbol.ID || state.LastTimeFrame != DefaultTimeframe {
 		t.Fatalf("unexpected last routing identity: %+v", state)
 	}
-	if state.LastLongQty != 0.58 || state.LastShortQty != 0.42 || state.LastRatio != 1.38 {
+	if state.LastLongAccount != 0.58 || state.LastShortAccount != 0.42 || state.LastRatio != 1.38 {
 		t.Fatalf("unexpected last event values: %+v", state)
 	}
-	if state.LatestLongQty != 0.58 || state.LatestShortQty != 0.42 || state.LatestRatio != 1.38 {
+	if state.LatestLongAccount != 0.58 || state.LatestShortAccount != 0.42 || state.LatestRatio != 1.38 {
 		t.Fatalf("unexpected latest hub values: %+v", state)
 	}
 	if state.WindowCount != 2 {
 		t.Fatalf("expected window count 2, got %d", state.WindowCount)
 	}
-	if !reflect.DeepEqual(state.WindowLongQtys, []float64{0.61, 0.58}) {
-		t.Fatalf("unexpected window long qtys: %+v", state.WindowLongQtys)
+	if !reflect.DeepEqual(state.WindowLongAccounts, []float64{0.61, 0.58}) {
+		t.Fatalf("unexpected window long accounts: %+v", state.WindowLongAccounts)
 	}
-	if !reflect.DeepEqual(state.WindowShortQtys, []float64{0.39, 0.42}) {
-		t.Fatalf("unexpected window short qtys: %+v", state.WindowShortQtys)
+	if !reflect.DeepEqual(state.WindowShortAccounts, []float64{0.39, 0.42}) {
+		t.Fatalf("unexpected window short accounts: %+v", state.WindowShortAccounts)
 	}
 	if !reflect.DeepEqual(state.WindowWarmups, []bool{true, false}) {
 		t.Fatalf("unexpected window warmup flags: %+v", state.WindowWarmups)
@@ -113,22 +112,18 @@ func TestBinanceLongShortStrategyOnDataAndDataHubProof(t *testing.T) {
 	if state.LastJobWarmUp || job.IsWarmUp {
 		t.Fatalf("expected job warmup cleared after live event: state=%v job=%v", state.LastJobWarmUp, job.IsWarmUp)
 	}
-	latest := job.DataHub.Latest(SourceName, job.Symbol.ID, DefaultTimeframe)
+	latest := job.DataHub.Get(DefaultTimeframe, SourceName, job.Symbol.ID)
 	if latest == nil {
-		t.Fatalf("expected latest hub event")
+		t.Fatalf("expected processed source fields")
 	}
-	if got, err := latest.FloatValue("longQty"); err != nil || got != 0.58 {
-		t.Fatalf("expected latest longQty 0.58, got %v err=%v", got, err)
+	if got := latest.Float64(FieldLongAccount); got != 0.58 {
+		t.Fatalf("expected latest longAccount 0.58, got %v", got)
 	}
-	if got, err := latest.FloatValue("shortQty"); err != nil || got != 0.42 {
-		t.Fatalf("expected latest shortQty 0.42, got %v err=%v", got, err)
+	if got := latest.Float64(FieldShortAccount); got != 0.42 {
+		t.Fatalf("expected latest shortAccount 0.42, got %v", got)
 	}
-	window := job.DataHub.Window(SourceName, job.Symbol.ID, DefaultTimeframe, 2)
-	if len(window) != 2 || !window[0].IsWarmUp || window[1].IsWarmUp {
-		t.Fatalf("unexpected hub window ordering/warmup: %+v", window)
-	}
-	if got, err := window[0].FloatValue("longShortRatio"); err != nil || got != 1.56 {
-		t.Fatalf("expected first ratio 1.56, got %v err=%v", got, err)
+	if ratio := latest.Series(FieldRatio); ratio == nil || ratio.Len() != 2 || ratio.Get(1) != 1.56 {
+		t.Fatalf("expected source-scoped ratio series, got %+v", ratio)
 	}
 }
 
@@ -136,7 +131,7 @@ func TestBinanceLongShortStrategyIgnoresUnrelatedSource(t *testing.T) {
 	job := newExampleJob(t, "BTCUSDT")
 	evt := newLongShortSeries(job.Symbol, 1704067200000, 0.51, 0.49, 1.04, false)
 	evt.Source = "other_source"
-	job.Strat.OnData(job, evt)
+	job.Strat.OnData(job, job.SetData(evt))
 	state := EnsureStrategyState(job)
 	if state.IgnoredEvents != 1 {
 		t.Fatalf("expected ignored event count 1, got %d", state.IgnoredEvents)
@@ -149,28 +144,23 @@ func TestBinanceLongShortStrategyIgnoresUnrelatedSource(t *testing.T) {
 	}
 }
 
-func TestBinanceLongShortStrategyReportsMissingDataHub(t *testing.T) {
+func TestBinanceLongShortStrategyReportsNilDataFields(t *testing.T) {
 	job := newExampleJob(t, "BTCUSDT")
-	job.DataHub = nil
-	job.Strat.OnData(job, newLongShortSeries(job.Symbol, 1704067200000, 0.5, 0.5, 1.0, false))
+	job.Strat.OnData(job, nil)
 	state := EnsureStrategyState(job)
-	if !strings.Contains(state.LastError, "missing DataHub") {
-		t.Fatalf("expected missing DataHub error, got %s", state.LastError)
-	}
-	if !strings.Contains(state.LastError, "source="+SourceName) || !strings.Contains(state.LastError, "tf="+DefaultTimeframe) {
-		t.Fatalf("expected contextual DataHub error, got %s", state.LastError)
+	if state.LastError != "data fields are nil" {
+		t.Fatalf("expected nil data fields error, got %s", state.LastError)
 	}
 }
 
 func TestBinanceLongShortStrategyReportsMalformedValues(t *testing.T) {
 	job := newExampleJob(t, "BTCUSDT")
 	evt := newLongShortSeries(job.Symbol, 1704067200000, 0.5, 0.5, 1.0, false)
-	evt.Values = map[string]any{"shortQty": 0.5, "longShortRatio": 1.0}
-	job.DataHub.Set(evt)
-	job.Strat.OnData(job, evt)
+	evt.Values = map[string]any{FieldShortAccount: 0.5, FieldRatio: 1.0}
+	job.Strat.OnData(job, job.SetData(evt))
 	state := EnsureStrategyState(job)
-	if !strings.Contains(state.LastError, "invalid event field longQty") {
-		t.Fatalf("expected malformed longQty error, got %s", state.LastError)
+	if state.LastError != "invalid data field "+FieldLongAccount+" for source="+SourceName+" sid=77 tf="+DefaultTimeframe+": field is missing" {
+		t.Fatalf("expected malformed longAccount error, got %s", state.LastError)
 	}
 	if state.SeenEvents != 0 {
 		t.Fatalf("expected malformed event to prevent strategy success, got %d", state.SeenEvents)
@@ -186,9 +176,9 @@ func TestBinanceLongShortDataHubWindowBoundedAndLatestReadable(t *testing.T) {
 		newLongShortSeries(job.Symbol, 1704240000000, 0.55, 0.45, 1.22, false),
 	}
 	for _, evt := range events {
-		job.DataHub.Set(evt)
+		fields := job.SetData(evt)
 		job.IsWarmUp = evt.IsWarmUp
-		job.Strat.OnData(job, evt)
+		job.Strat.OnData(job, fields)
 	}
 	state := EnsureStrategyState(job)
 	if state.LastError != "" {
@@ -197,22 +187,21 @@ func TestBinanceLongShortDataHubWindowBoundedAndLatestReadable(t *testing.T) {
 	if state.WindowCount != 2 {
 		t.Fatalf("expected bounded window count 2, got %d", state.WindowCount)
 	}
-	if !reflect.DeepEqual(state.WindowLongQtys, []float64{0.57, 0.55}) {
-		t.Fatalf("unexpected bounded longQty window: %+v", state.WindowLongQtys)
+	if !reflect.DeepEqual(state.WindowLongAccounts, []float64{0.57, 0.55}) {
+		t.Fatalf("unexpected bounded longAccount window: %+v", state.WindowLongAccounts)
 	}
 	if !reflect.DeepEqual(state.WindowWarmups, []bool{false, false}) {
 		t.Fatalf("unexpected bounded warmups: %+v", state.WindowWarmups)
 	}
-	latest := job.DataHub.Latest(SourceName, job.Symbol.ID, DefaultTimeframe)
-	if latest == nil || latest.TimeMS != 1704240000000 {
+	latest := job.DataHub.Get(DefaultTimeframe, SourceName, job.Symbol.ID)
+	if latest == nil || latest.TimeMS() != 1704240000000 {
 		t.Fatalf("unexpected latest after bounded window test: %+v", latest)
 	}
-	if got, err := latest.FloatValue("longQty"); err != nil || got != 0.55 {
-		t.Fatalf("expected latest longQty 0.55, got %v err=%v", got, err)
+	if got := latest.Float64(FieldLongAccount); got != 0.55 {
+		t.Fatalf("expected latest longAccount 0.55, got %v", got)
 	}
-	window := job.DataHub.Window(SourceName, job.Symbol.ID, DefaultTimeframe, 0)
-	if len(window) != 2 || window[0].TimeMS != 1704153600000 || window[1].TimeMS != 1704240000000 {
-		t.Fatalf("unexpected bounded hub window: %+v", window)
+	if series := latest.Series(FieldLongAccount); series == nil || !reflect.DeepEqual(collectSeriesFloat(series), []float64{0.57, 0.55}) {
+		t.Fatalf("unexpected bounded source series: %+v", series)
 	}
 }
 
@@ -238,13 +227,13 @@ func TestBinanceLongShortDataHubIgnoresLegacyKlineEntriesWithSameSidAndTf(t *tes
 	}
 	longShortLive := newLongShortSeries(job.Symbol, 1704240000000, 0.58, 0.42, 1.38, false)
 
-	job.DataHub.Set(longShortWarmup)
+	fields := job.SetData(longShortWarmup)
 	job.IsWarmUp = longShortWarmup.IsWarmUp
-	job.Strat.OnData(job, longShortWarmup)
-	job.DataHub.Set(legacyKline)
-	job.DataHub.Set(longShortLive)
+	job.Strat.OnData(job, fields)
+	job.SetData(legacyKline)
+	fields = job.SetData(longShortLive)
 	job.IsWarmUp = longShortLive.IsWarmUp
-	job.Strat.OnData(job, longShortLive)
+	job.Strat.OnData(job, fields)
 
 	state := EnsureStrategyState(job)
 	if state.LastError != "" {
@@ -253,17 +242,17 @@ func TestBinanceLongShortDataHubIgnoresLegacyKlineEntriesWithSameSidAndTf(t *tes
 	if state.SeenEvents != 2 || state.IgnoredEvents != 0 {
 		t.Fatalf("expected only longshort events to count as seen, got %+v", state)
 	}
-	if !reflect.DeepEqual(state.WindowLongQtys, []float64{0.61, 0.58}) {
-		t.Fatalf("expected strategy window to ignore legacy kline values, got %+v", state.WindowLongQtys)
+	if !reflect.DeepEqual(state.WindowLongAccounts, []float64{0.61, 0.58}) {
+		t.Fatalf("expected strategy window to ignore legacy kline values, got %+v", state.WindowLongAccounts)
 	}
 	if !reflect.DeepEqual(state.WindowWarmups, []bool{true, false}) {
 		t.Fatalf("expected strategy warmup window to remain source-scoped, got %+v", state.WindowWarmups)
 	}
-	if got := job.DataHub.Window("kline", job.Symbol.ID, DefaultTimeframe, 0); len(got) != 1 || got[0].TimeMS != legacyKline.TimeMS {
-		t.Fatalf("expected legacy kline history preserved separately, got %+v", got)
+	if got := job.DataHub.Get(DefaultTimeframe, "kline", job.Symbol.ID); got == nil || got.TimeMS() != legacyKline.TimeMS {
+		t.Fatalf("expected legacy kline fields preserved separately, got %+v", got)
 	}
-	if got := job.DataHub.Window(SourceName, job.Symbol.ID, DefaultTimeframe, 0); len(got) != 2 || got[0].TimeMS != longShortWarmup.TimeMS || got[1].TimeMS != longShortLive.TimeMS {
-		t.Fatalf("expected longshort history preserved separately, got %+v", got)
+	if got := job.DataHub.Get(DefaultTimeframe, SourceName, job.Symbol.ID); got == nil || got.TimeMS() != longShortLive.TimeMS {
+		t.Fatalf("expected longshort fields preserved separately, got %+v", got)
 	}
 }
 
@@ -278,17 +267,17 @@ func newExampleJob(t *testing.T, symbol string) *strat.StratJob {
 		t.Fatalf("expected strategy instance")
 	}
 	job := &strat.StratJob{
-		Strat:    stgy,
-		DataHub:  strat.NewDataHub(),
-		Symbol:   &orm.ExSymbol{ID: 77, Exchange: "binance", Market: "future", Symbol: symbol},
-		Account:  config.DefAcc,
+		Strat:     stgy,
+		DataHub:   strat.NewDataHub(),
+		Symbol:    &orm.ExSymbol{ID: 77, Exchange: "binance", Market: "future", Symbol: symbol},
+		Account:   config.DefAcc,
 		TimeFrame: DefaultTimeframe,
 	}
 	EnsureStrategyState(job)
 	return job
 }
 
-func newLongShortSeries(exs *orm.ExSymbol, timeMS int64, longQty, shortQty, ratio float64, warmup bool) *orm.DataSeries {
+func newLongShortSeries(exs *orm.ExSymbol, timeMS int64, longAccount, shortAccount, ratio float64, warmup bool) *orm.DataSeries {
 	return &orm.DataSeries{
 		Source:    SourceName,
 		Sid:       exs.ID,
@@ -299,9 +288,9 @@ func newLongShortSeries(exs *orm.ExSymbol, timeMS int64, longQty, shortQty, rati
 		Closed:    true,
 		IsWarmUp:  warmup,
 		Values: map[string]any{
-			"longQty":        longQty,
-			"shortQty":       shortQty,
-			"longShortRatio": ratio,
+			FieldLongAccount:  longAccount,
+			FieldShortAccount: shortAccount,
+			FieldRatio:        ratio,
 		},
 	}
 }

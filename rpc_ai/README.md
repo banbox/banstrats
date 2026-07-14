@@ -25,5 +25,15 @@ Example: Treat market prediction as a three-class classification task: uncertain
 
 ## 5. Deploy Model Service
 
+Configure the model endpoint on the strategy policy. `rpc_ai:trade1` does not
+use a hard-coded host and skips inference safely when no endpoint is provided.
+
+```yaml
+run_policy:
+  - name: rpc_ai:trade1
+    ai_grpc_addr: "127.0.0.1:8080"
+    ai_grpc_timeout_ms: 5000
+```
+
 ## 6. Refine Trading Strategy
 Modify the strategy from step 2 to request data from the deployed model via gRPC and trade based on the returned results

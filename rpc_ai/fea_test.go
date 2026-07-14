@@ -12,13 +12,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"math"
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestDataClient(t *testing.T) {
 	// 此测试函数连接grpc，输出收到的每个bar的概要信息
-	addr := "127.0.0.1:6789"
+	addr := os.Getenv("BANSTRATS_RPC_AI_DATA_SERVER")
+	if addr == "" {
+		t.Skip("set BANSTRATS_RPC_AI_DATA_SERVER to run against a feature server")
+	}
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Error("connect grpc fail", zap.Error(err))

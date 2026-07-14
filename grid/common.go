@@ -155,7 +155,7 @@ func (m *Grid) CheckPos(s *strat.StratJob) {
 				Tag:      tag,
 				Amount:   extAmt,
 				Short:    m.Dirt < 0,
-				StopLoss: odList[0].GetStopLoss().Price,
+				StopLoss: m.stopLossPrice(odList[0]),
 			})
 		}
 		if m.Debug {
@@ -182,7 +182,7 @@ func (m *Grid) CheckPos(s *strat.StratJob) {
 				Limit:    openPrice,
 				Amount:   m.OneAmt,
 				Short:    m.Dirt < 0,
-				StopLoss: odList[0].GetStopLoss().Price,
+				StopLoss: m.stopLossPrice(odList[0]),
 			})
 			if m.Debug {
 				openInfo = fmt.Sprintf("open=%.4f ", openPrice)
@@ -222,6 +222,15 @@ func (m *Grid) CheckPos(s *strat.StratJob) {
 	}
 }
 
+func (m *Grid) stopLossPrice(od *ormo.InOutOrder) float64 {
+	if od != nil {
+		if stopLoss := od.GetStopLoss(); stopLoss != nil && stopLoss.Price > 0 {
+			return stopLoss.Price
+		}
+	}
+	return m.EntPrice - m.Unit*m.SLRate*m.Dirt
+}
+
 func (m *Grid) OnOrderChange(s *strat.StratJob, od *ormo.InOutOrder, chgType int) {
 	if chgType == strat.OdChgEnterFill && od.Enter.Filled > core.AmtDust {
 		// Completion of warehouse entry event
@@ -231,7 +240,7 @@ func (m *Grid) OnOrderChange(s *strat.StratJob, od *ormo.InOutOrder, chgType int
 			// Set the first downside buy and the first profitable sell
 			// 设置第一个下跌买入和第一个盈利卖出
 			m.EntPrice = od.Enter.Average
-			stoploss := od.GetStopLoss().Price
+			stoploss := m.stopLossPrice(od)
 			upgaps := make([]string, 0, 5)
 			dngaps := make([]string, 0, 5)
 			for i := 0; i < 5; i++ {

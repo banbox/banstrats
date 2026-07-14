@@ -18,7 +18,7 @@ func DemoInfo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		WarmupNum: 100,
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
-				{"_cur_", "1h", 30},
+				{Pair: "_cur_", TimeFrame: "1h", WarmupNum: 30},
 			}
 		},
 		OnStartUp: func(s *strat.StratJob) {
@@ -30,7 +30,6 @@ func DemoInfo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			ma5 := ta.SMA(e.Close, smlLen)
 			ma20 := ta.SMA(e.Close, bigLen)
 			maCrx := ta.Cross(ma5, ma20)
-
 			if maCrx == 1 && m.bigDirt > 0 {
 				s.OpenOrder(&strat.EnterReq{Tag: "open"})
 			} else if maCrx == -1 {

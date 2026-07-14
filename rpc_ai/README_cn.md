@@ -18,5 +18,15 @@ go端启动`bot tool data_server`，然后python端编写调用grpc的代码，�
 ## 4. 训练行情模型
 示例：将行情作为三分类任务：不确定、上升、下降；
 ## 5. 部署模型服务
+
+在策略配置中指定模型服务地址。`rpc_ai:trade1` 不再使用硬编码地址；未配置服务时会安全跳过推理。
+
+```yaml
+run_policy:
+  - name: rpc_ai:trade1
+    ai_grpc_addr: "127.0.0.1:8080"
+    ai_grpc_timeout_ms: 5000
+```
+
 ## 6. 完善交易策略
 修改第二步的策略，将数据通过grpc请求部署的模型，根据返回结果进行交易

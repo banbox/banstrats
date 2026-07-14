@@ -2,7 +2,6 @@ package rpc_ai
 
 import (
 	"context"
-	"fmt"
 	"github.com/banbox/banbot/biz"
 	"github.com/banbox/banbot/config"
 	"github.com/banbox/banbot/core"
@@ -14,6 +13,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"math"
+	"strings"
+	"time"
+)
+
+const (
+	aiGRPCAddrKey      = "ai_grpc_addr"
+	aiGRPCTimeoutMSKey = "ai_grpc_timeout_ms"
+	defaultAITimeout   = 5 * time.Second
+	maxAITimeout       = time.Minute
 )
 
 type AIMore struct {
@@ -24,27 +32,73 @@ type AIMore struct {
 	age     int // 已持仓bar数
 }
 
-func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
-	var seqNum = 50    // 特征序列长度
-	var maxOdNum = 1.0 // 单币种单方向最多开1单
-	const maxMsgSize = 100 * 1024 * 1024
-	const maxHoldAge = 300       // 持仓age超过此配置，强制平仓
-	addr := "192.168.1.253:8080" // python model grpc addr
-	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err_ := grpc.NewClient(addr, creds, grpc.WithDefaultCallOptions(
-		grpc.MaxCallSendMsgSize(maxMsgSize),
-		grpc.MaxCallRecvMsgSize(maxMsgSize),
-	))
-	if err_ != nil {
-		panic(err_)
+type aiRPCClient struct {
+	client  biz.AInferClient
+	conn    *grpc.ClientConn
+	timeout time.Duration
+}
+
+func newAIRPCClient(pol *config.RunPolicyConfig) (*aiRPCClient, error) {
+	addr, timeout := aiRPCConfig(pol)
+	if addr == "" {
+		return nil, nil
 	}
-	client := biz.NewAInferClient(conn)
+	const maxMsgSize = 100 * 1024 * 1024
+	conn, err := grpc.NewClient(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &aiRPCClient{
+		client:  biz.NewAInferClient(conn),
+		conn:    conn,
+		timeout: timeout,
+	}, nil
+}
+
+func aiRPCConfig(pol *config.RunPolicyConfig) (string, time.Duration) {
+	var more map[string]interface{}
+	if pol != nil {
+		more = pol.More
+	}
+	addr, _ := more[aiGRPCAddrKey].(string)
+	addr = strings.TrimSpace(addr)
+	timeout := defaultAITimeout
+	if value, ok := more[aiGRPCTimeoutMSKey]; ok {
+		switch value := value.(type) {
+		case int:
+			timeout = time.Duration(value) * time.Millisecond
+		case int64:
+			timeout = time.Duration(value) * time.Millisecond
+		case float64:
+			timeout = time.Duration(value * float64(time.Millisecond))
+		}
+	}
+	if timeout <= 0 || timeout > maxAITimeout {
+		timeout = defaultAITimeout
+	}
+	return addr, timeout
+}
+
+func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
+	var seqNum = 50        // 特征序列长度
+	var maxOdNum = 1.0     // 单币种单方向最多开1单
+	const maxHoldAge = 300 // 持仓age超过此配置，强制平仓
+	rpcClient, rpcErr := newAIRPCClient(pol)
 	return &strat.TradeStrat{
 		BatchInOut: true,
 		WarmupNum:  300,
+		OnStartUp: func(s *strat.StratJob) {
+			s.More = &AIMore{}
+		},
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
-				{"_cur_", "1h", 300},
+				{Pair: "_cur_", TimeFrame: "1h", WarmupNum: 300},
 			}
 		},
 		OnBar: func(s *strat.StratJob) {
@@ -75,12 +129,25 @@ func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			var feasLen, feasDepth, infoDepth int
 			for _, j := range jobs {
 				m, _ := j.More.(*AIMore)
-				if len(m.info) != 23 {
+				if m == nil || m.feas == nil || m.feasBig == nil || len(m.info) == 0 {
+					continue
+				}
+				rows, cols := m.feas.Dims()
+				bigRows, bigCols := m.feasBig.Dims()
+				if rows == 0 || cols == 0 || rows != bigRows || cols != bigCols {
+					log.Warn("skip ai inference job with incompatible feature shapes",
+						zap.Int("feas_rows", rows), zap.Int("feas_cols", cols),
+						zap.Int("feas_big_rows", bigRows), zap.Int("feas_big_cols", bigCols))
 					continue
 				}
 				if len(valids) == 0 {
-					feasLen, feasDepth = m.feas.Dims()
+					feasLen, feasDepth = rows, cols
 					infoDepth = len(m.info)
+				} else if rows != feasLen || cols != feasDepth || len(m.info) != infoDepth {
+					log.Warn("skip ai inference job with inconsistent batch shape",
+						zap.Int("feas_rows", rows), zap.Int("feas_cols", cols),
+						zap.Int("info_depth", len(m.info)))
+					continue
 				}
 				valids = append(valids, j)
 				feas1 = append(feas1, m.feas.RawMatrix().Data...)
@@ -94,11 +161,20 @@ func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			if len(valids) == 0 {
 				return
 			}
+			if rpcErr != nil {
+				log.Error("create ai inference client failed", zap.Error(rpcErr))
+				return
+			}
+			if rpcClient == nil {
+				log.Warn("skip ai inference: set run_policy.ai_grpc_addr to enable rpc_ai:trade1")
+				return
+			}
 			bSize := len(valids)
 			feaShape := []int32{int32(bSize), int32(feasLen), int32(feasDepth)}
-			ctx := context.Background()
+			ctx, cancel := context.WithTimeout(context.Background(), rpcClient.timeout)
+			defer cancel()
 
-			trend, err_ := client.Trend(ctx, &biz.ArrMap{
+			trend, err_ := rpcClient.client.Trend(ctx, &biz.ArrMap{
 				Mats: map[string]*biz.NumArr{
 					"feas":  {Data: feas1, Shape: feaShape},
 					"feas2": {Data: feas2, Shape: feaShape},
@@ -106,14 +182,25 @@ func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
 				},
 			})
 			if err_ != nil {
-				log.Panic("call ai trend fail", zap.Int("bSize", bSize), zap.Error(err_))
+				log.Error("call ai trend failed", zap.Int("bSize", bSize), zap.Error(err_))
+				return
+			}
+			if trend == nil || trend.Mats["pred"] == nil {
+				log.Error("ai trend response has no pred matrix", zap.Int("bSize", bSize))
+				return
 			}
 			preds := trend.Mats["pred"].Data
 			if len(preds) != bSize {
-				panic(fmt.Sprintf("preds length error, expect: %v, got: %v", len(preds), bSize))
+				log.Error("ai trend prediction count mismatch",
+					zap.Int("expected", bSize), zap.Int("actual", len(preds)))
+				return
 			}
 			for i, j := range valids {
 				m, _ := j.More.(*AIMore)
+				if math.IsNaN(preds[i]) || math.IsInf(preds[i], 0) {
+					log.Warn("skip invalid ai prediction", zap.Float64("prediction", preds[i]))
+					continue
+				}
 				pred := int(math.Round(preds[i])) // 1: long  2: short
 				truncated := false
 				if len(j.LongOrders) > 0 || len(j.ShortOrders) > 0 {
@@ -143,6 +230,11 @@ func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
 						Short: true,
 					})
 				}
+			}
+		},
+		OnShutDown: func(*strat.StratJob) {
+			if rpcClient != nil {
+				_ = rpcClient.conn.Close()
 			}
 		},
 	}

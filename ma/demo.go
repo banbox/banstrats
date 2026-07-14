@@ -12,6 +12,7 @@ func init() {
 	// `init`函数是go中的特殊函数，会在当前包被导入时立刻执行
 	strat.AddStratGroup("ma", map[string]strat.FuncMakeStrat{
 		"dca":        DCA,
+		"openClose":  openClose,
 		"demo":       Demo,
 		"demo_er":    DemoER,
 		"demo2":      DemoInfo,

@@ -9,6 +9,9 @@ import (
 )
 
 func calcCorrs(jobs []*strat.StratJob, isBig bool) {
+	if len(jobs) < 2 {
+		return
+	}
 	dataArr := make([][]float64, 0, len(jobs))
 	for _, j := range jobs {
 		dataArr = append(dataArr, j.Env.Close.Range(0, 70))
@@ -22,15 +25,19 @@ func calcCorrs(jobs []*strat.StratJob, isBig bool) {
 		m, _ := j.More.(*BatchSta)
 		if isBig {
 			m.bigCorr = arr[i]
+			m.bigCorrReady = true
 		} else {
 			m.smlCorr = arr[i]
+			m.smlCorrReady = true
 		}
 	}
 }
 
 type BatchSta struct {
-	smlCorr float64
-	bigCorr float64
+	smlCorr      float64
+	bigCorr      float64
+	smlCorrReady bool
+	bigCorrReady bool
 }
 
 func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
@@ -40,7 +47,7 @@ func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		BatchInfo:  true,
 		OnPairInfos: func(s *strat.StratJob) []*strat.PairSub {
 			return []*strat.PairSub{
-				{"_cur_", "1h", 100},
+				{Pair: "_cur_", TimeFrame: "1h", WarmupNum: 100},
 			}
 		},
 		OnStartUp: func(s *strat.StratJob) {
@@ -48,6 +55,9 @@ func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		},
 		OnBar: func(s *strat.StratJob) {
 			m, _ := s.More.(*BatchSta)
+			if m == nil || !m.smlCorrReady || !m.bigCorrReady {
+				return
+			}
 			if m.bigCorr < 0.5 && m.smlCorr < 0.5 {
 				// 当大小周期的相关度均低于50%时开单。
 				s.OpenOrder(&strat.EnterReq{Tag: "open"})
@@ -57,7 +67,7 @@ func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			}
 		},
 		OnBatchJobs: func(jobs []*strat.StratJob) {
-			if jobs[0].IsWarmUp {
+			if len(jobs) < 2 || jobs[0].IsWarmUp {
 				return
 			}
 			calcCorrs(jobs, false)
@@ -67,7 +77,7 @@ func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			for _, job := range jobs {
 				jobList = append(jobList, job.Job)
 			}
-			if jobList[0].IsWarmUp {
+			if len(jobList) < 2 || jobList[0].IsWarmUp {
 				return
 			}
 			calcCorrs(jobList, true)
