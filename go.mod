@@ -9,7 +9,7 @@ replace github.com/banbox/banbot => ../banbot
 replace github.com/banbox/banexg => ../banexg
 
 require (
-	github.com/banbox/banbot v0.3.8
+	github.com/banbox/banbot v0.4.0-beta.10
 	github.com/banbox/banexg v0.2.54
 	github.com/banbox/banta v0.3.7
 	go.uber.org/zap v1.27.0
