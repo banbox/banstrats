@@ -131,7 +131,7 @@ func TestBinanceLongShortStrategyIgnoresUnrelatedSource(t *testing.T) {
 	job := newExampleJob(t, "BTCUSDT")
 	evt := newLongShortSeries(job.Symbol, 1704067200000, 0.51, 0.49, 1.04, false)
 	evt.Source = "other_source"
-	job.Strat.OnData(job, job.SetData(evt))
+	job.Strat.OnData(job, strat.DataEvent{DataFields: job.SetData(evt), Role: strat.DataRoleCustom, Symbol: job.Symbol})
 	state := EnsureStrategyState(job)
 	if state.IgnoredEvents != 1 {
 		t.Fatalf("expected ignored event count 1, got %d", state.IgnoredEvents)
@@ -146,7 +146,7 @@ func TestBinanceLongShortStrategyIgnoresUnrelatedSource(t *testing.T) {
 
 func TestBinanceLongShortStrategyReportsNilDataFields(t *testing.T) {
 	job := newExampleJob(t, "BTCUSDT")
-	job.Strat.OnData(job, nil)
+	job.Strat.OnData(job, strat.DataEvent{Role: strat.DataRoleCustom, Symbol: job.Symbol})
 	state := EnsureStrategyState(job)
 	if state.LastError != "data fields are nil" {
 		t.Fatalf("expected nil data fields error, got %s", state.LastError)
@@ -157,7 +157,7 @@ func TestBinanceLongShortStrategyReportsMalformedValues(t *testing.T) {
 	job := newExampleJob(t, "BTCUSDT")
 	evt := newLongShortSeries(job.Symbol, 1704067200000, 0.5, 0.5, 1.0, false)
 	evt.Values = map[string]any{FieldShortAccount: 0.5, FieldRatio: 1.0}
-	job.Strat.OnData(job, job.SetData(evt))
+	job.Strat.OnData(job, strat.DataEvent{DataFields: job.SetData(evt), Role: strat.DataRoleCustom, Symbol: job.Symbol})
 	state := EnsureStrategyState(job)
 	if state.LastError != "invalid data field "+FieldLongAccount+" for source="+SourceName+" sid=77 tf="+DefaultTimeframe+": field is missing" {
 		t.Fatalf("expected malformed longAccount error, got %s", state.LastError)
@@ -178,7 +178,7 @@ func TestBinanceLongShortDataHubWindowBoundedAndLatestReadable(t *testing.T) {
 	for _, evt := range events {
 		fields := job.SetData(evt)
 		job.IsWarmUp = evt.IsWarmUp
-		job.Strat.OnData(job, fields)
+		job.Strat.OnData(job, strat.DataEvent{DataFields: fields, Role: strat.DataRoleCustom, Symbol: job.Symbol})
 	}
 	state := EnsureStrategyState(job)
 	if state.LastError != "" {
@@ -194,7 +194,7 @@ func TestBinanceLongShortDataHubWindowBoundedAndLatestReadable(t *testing.T) {
 		t.Fatalf("unexpected bounded warmups: %+v", state.WindowWarmups)
 	}
 	latest := job.DataHub.Get(DefaultTimeframe, SourceName, job.Symbol.ID)
-	if latest == nil || latest.TimeMS() != 1704240000000 {
+	if latest == nil || latest.TimeMS != 1704240000000 {
 		t.Fatalf("unexpected latest after bounded window test: %+v", latest)
 	}
 	if got := latest.Float64(FieldLongAccount); got != 0.55 {
@@ -229,11 +229,11 @@ func TestBinanceLongShortDataHubIgnoresLegacyKlineEntriesWithSameSidAndTf(t *tes
 
 	fields := job.SetData(longShortWarmup)
 	job.IsWarmUp = longShortWarmup.IsWarmUp
-	job.Strat.OnData(job, fields)
+	job.Strat.OnData(job, strat.DataEvent{DataFields: fields, Role: strat.DataRoleCustom, Symbol: job.Symbol})
 	job.SetData(legacyKline)
 	fields = job.SetData(longShortLive)
 	job.IsWarmUp = longShortLive.IsWarmUp
-	job.Strat.OnData(job, fields)
+	job.Strat.OnData(job, strat.DataEvent{DataFields: fields, Role: strat.DataRoleCustom, Symbol: job.Symbol})
 
 	state := EnsureStrategyState(job)
 	if state.LastError != "" {
@@ -248,10 +248,10 @@ func TestBinanceLongShortDataHubIgnoresLegacyKlineEntriesWithSameSidAndTf(t *tes
 	if !reflect.DeepEqual(state.WindowWarmups, []bool{true, false}) {
 		t.Fatalf("expected strategy warmup window to remain source-scoped, got %+v", state.WindowWarmups)
 	}
-	if got := job.DataHub.Get(DefaultTimeframe, "kline", job.Symbol.ID); got == nil || got.TimeMS() != legacyKline.TimeMS {
+	if got := job.DataHub.Get(DefaultTimeframe, "kline", job.Symbol.ID); got == nil || got.TimeMS != legacyKline.TimeMS {
 		t.Fatalf("expected legacy kline fields preserved separately, got %+v", got)
 	}
-	if got := job.DataHub.Get(DefaultTimeframe, SourceName, job.Symbol.ID); got == nil || got.TimeMS() != longShortLive.TimeMS {
+	if got := job.DataHub.Get(DefaultTimeframe, SourceName, job.Symbol.ID); got == nil || got.TimeMS != longShortLive.TimeMS {
 		t.Fatalf("expected longshort fields preserved separately, got %+v", got)
 	}
 }

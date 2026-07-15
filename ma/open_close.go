@@ -10,8 +10,7 @@ func openClose(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
 		WarmupNum:     100,
 		RunTimeFrames: []string{"1m"},
-		OnBar: func(s *strat.StratJob) {
-
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			if len(s.LongOrders) == 0 {
 				s.OpenOrder(&strat.EnterReq{
 					Tag: "open",

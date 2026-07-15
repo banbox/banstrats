@@ -18,7 +18,7 @@ func ws(p *config.RunPolicyConfig) *strat.TradeStrat {
 			core.WsSubTrade: "",
 			core.WsSubKLine: "",
 		},
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			e := s.Env
 			log.Info(fmt.Sprintf("OnBar %v: %v", e.TimeStop, e.Close.Get(0)))
 		},

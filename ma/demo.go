@@ -30,7 +30,7 @@ func Demo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	bigLen := int(pol.Def("bigLen", 20, core.PNorm(10, 40)))
 	return &strat.TradeStrat{
 		WarmupNum: 100,
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			e := s.Env
 			ma5 := ta.SMA(e.Close, smlLen)
 			ma20 := ta.SMA(e.Close, bigLen)

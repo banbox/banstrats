@@ -10,7 +10,7 @@ import (
 
 func CustomExitDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			if len(s.LongOrders) == 0 {
 				s.OpenOrder(&strat.EnterReq{Tag: "long"})
 			} else if rand.Float64() < 0.1 {

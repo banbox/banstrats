@@ -19,8 +19,6 @@ func editPairs(p *config.RunPolicyConfig) *strat.TradeStrat {
 			}
 			return items
 		},
-		OnBar: func(s *strat.StratJob) {
-
-		},
+		OnData: func(_ *strat.StratJob, _ strat.DataEvent) {},
 	}
 }

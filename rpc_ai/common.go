@@ -2,6 +2,7 @@ package rpc_ai
 
 import (
 	"github.com/banbox/banbot/biz"
+	"github.com/banbox/banbot/strat"
 	"github.com/banbox/banbot/utils"
 	"github.com/banbox/banexg"
 	"github.com/banbox/banexg/errs"
@@ -85,33 +86,47 @@ func matToNumArr(m *mat.Dense) *biz.NumArr {
 }
 
 func onAiFeatures(e *ta.BarEnv, num int) *mat.Dense {
-	rsi14 := ta.RSI(e.Close, 14)
-	rsi50 := ta.RSI(e.Close, 50)
-	atr14 := ta.ATR(e.High, e.Low, e.Close, 14)
-	atr50 := ta.ATR(e.High, e.Low, e.Close, 30)
-	sma5 := ta.SMA(e.Close, 5)
-	sma20 := ta.SMA(e.Close, 20)
-	sma70 := ta.SMA(e.Close, 70)
-	adx := ta.ADX(e.High, e.Low, e.Close, 14)
-	roc := ta.ROC(e.Close, 30)
-	if num == 0 {
+	if e == nil {
 		return nil
 	}
+	return onAiSeries(e.High, e.Low, e.Close, e.Volume, num)
+}
+
+func onAiDataFeatures(data *strat.DataFields, num int) *mat.Dense {
+	if data == nil {
+		return nil
+	}
+	return onAiSeries(data.Series("high"), data.Series("low"), data.Series("close"), data.Series("volume"), num)
+}
+
+func onAiSeries(high, low, close, volume *ta.Series, num int) *mat.Dense {
+	if high == nil || low == nil || close == nil || volume == nil || num == 0 {
+		return nil
+	}
+	rsi14 := ta.RSI(close, 14)
+	rsi50 := ta.RSI(close, 50)
+	atr14 := ta.ATR(high, low, close, 14)
+	atr50 := ta.ATR(high, low, close, 30)
+	sma5 := ta.SMA(close, 5)
+	sma20 := ta.SMA(close, 20)
+	sma70 := ta.SMA(close, 70)
+	adx := ta.ADX(high, low, close, 14)
+	roc := ta.ROC(close, 30)
 	// 这里的特征列数最好是4或10的倍数，否则模型端采样会有问题
 	feaNum := 30
 	res := mat.NewDense(num, feaNum, nil)
 	for i := 0; i < num; i++ {
-		closeVal := e.Close.Get(i)
-		volVal := e.Volume.Get(i)
+		closeVal := close.Get(i)
+		volVal := volume.Get(i)
 		sma5Val := sma5.Get(i)
 		sma20Val := sma20.Get(i)
 		row := []float64{
-			e.High.Get(i),
-			e.Low.Get(i),
+			high.Get(i),
+			low.Get(i),
 			closeVal,
 			volVal,
-			(closeVal - e.Close.Get(i+1)) / closeVal,
-			(closeVal - e.Close.Get(i+7)) / closeVal, // 此行超出(-1,1)，调用方需截断
+			(closeVal - close.Get(i+1)) / closeVal,
+			(closeVal - close.Get(i+7)) / closeVal, // 此行超出(-1,1)，调用方需截断
 			rsi14.Get(i) / 100,
 			rsi50.Get(i) / 100,
 			atr14.Get(i) / closeVal,

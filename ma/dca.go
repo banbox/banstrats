@@ -24,7 +24,7 @@ func DCA(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			}
 		},
 
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			state, _ := s.More.(*DCAState)
 			currentTime := s.Env.TimeStop
 

@@ -9,7 +9,7 @@ import (
 func DrawDown(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
 		DrawDownExit: true,
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			if len(s.LongOrders) == 0 {
 				s.OpenOrder(&strat.EnterReq{Tag: "long"})
 			}

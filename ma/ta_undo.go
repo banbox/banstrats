@@ -79,7 +79,7 @@ func taUndo(p *config.RunPolicyConfig) *strat.TradeStrat {
 					zap.Float64s("cls", e.Close.Range(0, 6)))
 			}
 		},
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			e := s.Env
 			s.More = [5]float64{
 				e.Open.Get(0),

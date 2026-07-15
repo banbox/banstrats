@@ -10,7 +10,7 @@ func TrailStop(p *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
 		WarmupNum:  100,
 		TimeFrames: "1h",
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			e := s.Env
 			atr := ta.ATR(e.High, e.Low, e.Close, 14).Get(0)
 			atrPct := atr * 100 / e.Close.Get(0)

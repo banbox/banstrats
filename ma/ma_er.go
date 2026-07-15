@@ -13,7 +13,7 @@ func DemoER(pol *config.RunPolicyConfig) *strat.TradeStrat {
 	erUpp := pol.Def("erUpp", 0.13, core.PNorm(0.1, 0.7))
 	return &strat.TradeStrat{
 		WarmupNum: 100,
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(s *strat.StratJob, _ strat.DataEvent) {
 			e := s.Env
 			ma5 := ta.SMA(e.Close, smlLen)
 			ma20 := ta.SMA(e.Close, bigLen)

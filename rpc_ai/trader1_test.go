@@ -74,16 +74,6 @@ func newAITradeTestJob(t *testing.T, stgy *strat.TradeStrat) *strat.StratJob {
 	if err != nil {
 		t.Fatalf("new primary bar env: %v", err)
 	}
-	big, err := ta.NewBarEnv("binance", "linear", "BTC/USDT:USDT", "1h")
-	if err != nil {
-		t.Fatalf("new info bar env: %v", err)
-	}
-	const startMS = int64(1704067200000)
-	for i := 0; i < 360; i++ {
-		base := 100 + float64(i)*0.05
-		small.OnBar(startMS+int64(i)*15*60*1000, base-0.2, base+0.8, base-0.7, base, 1000, 0, 0, 0)
-		big.OnBar(startMS+int64(i)*60*60*1000, base-0.2, base+0.8, base-0.7, base, 1000, 0, 0, 0)
-	}
 	job := &strat.StratJob{
 		Strat:        stgy,
 		Env:          small,
@@ -95,9 +85,32 @@ func newAITradeTestJob(t *testing.T, stgy *strat.TradeStrat) *strat.StratJob {
 		CloseShort:   true,
 	}
 	stgy.OnStartUp(job)
-	stgy.OnInfoBar(job, big, job.Symbol.Symbol, "1h")
-	stgy.OnBar(job)
+	const startMS = int64(1704067200000)
+	for i := 0; i < 360; i++ {
+		base := 100 + float64(i)*0.05
+		smallMS := startMS + int64(i)*15*60*1000
+		bigMS := startMS + int64(i)*60*60*1000
+		small.OnBar(smallMS, base-0.2, base+0.8, base-0.7, base, 1000, 0, 0, 0)
+		stgy.OnData(job, setAIKlineData(job, "1h", bigMS, base))
+	}
+	stgy.OnData(job, setAIKlineData(job, job.TimeFrame, startMS+359*15*60*1000, 100+359*0.05))
 	return job
+}
+
+func setAIKlineData(job *strat.StratJob, tf string, timeMS int64, close float64) strat.DataEvent {
+	fields := job.SetData(&orm.DataSeries{
+		Source: orm.SeriesSourceKline, Sid: job.Symbol.ID, TimeFrame: tf,
+		TimeMS: timeMS, EndMS: timeMS + 1, Closed: true,
+		Values: map[string]any{
+			"open": close - 0.2, "high": close + 0.8, "low": close - 0.7,
+			"close": close, "volume": 1000.0,
+		},
+	})
+	role := strat.DataRoleInfo
+	if tf == job.TimeFrame {
+		role = strat.DataRoleMain
+	}
+	return strat.DataEvent{DataFields: fields, Role: role, Symbol: job.Symbol}
 }
 
 func TestAITradeUsesConfiguredGRPCForOpenAndCloseSignals(t *testing.T) {
@@ -157,7 +170,11 @@ func TestAITradeSkipsUnreadyFeaturesAndTimesOutInference(t *testing.T) {
 		t.Fatalf("unready feature job unexpectedly called RPC %d times", len(requests))
 	}
 
-	stgy.OnInfoBar(job, job.Env, job.Symbol.Symbol, "1h")
+	stgy.OnData(job, strat.DataEvent{
+		DataFields: job.DataHub.Get("1h", orm.SeriesSourceKline, job.Symbol.ID),
+		Role:       strat.DataRoleInfo,
+		Symbol:     job.Symbol,
+	})
 	start := time.Now()
 	stgy.OnBatchJobs([]*strat.StratJob{job})
 	if elapsed := time.Since(start); elapsed > time.Second {
@@ -181,4 +198,12 @@ func configureAITradeTest(t *testing.T) {
 		config.StakeAmount = oldStake
 		config.OpenVolRate = oldOpenVolRate
 	})
+}
+
+func TestAITradeUsesOnDataOnly(t *testing.T) {
+	stgy := AITrade(&config.RunPolicyConfig{})
+	if stgy.OnData == nil || stgy.OnBar != nil || stgy.OnInfoBar != nil {
+		t.Fatalf("callbacks not fully migrated: OnData=%v OnBar=%v OnInfoBar=%v",
+			stgy.OnData != nil, stgy.OnBar != nil, stgy.OnInfoBar != nil)
+	}
 }

@@ -24,23 +24,29 @@ func DemoInfo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		OnStartUp: func(s *strat.StratJob) {
 			s.More = &Demo2Sta{}
 		},
-		OnBar: func(s *strat.StratJob) {
-			e := s.Env
-			m, _ := s.More.(*Demo2Sta)
-			ma5 := ta.SMA(e.Close, smlLen)
-			ma20 := ta.SMA(e.Close, bigLen)
-			maCrx := ta.Cross(ma5, ma20)
-			if maCrx == 1 && m.bigDirt > 0 {
-				s.OpenOrder(&strat.EnterReq{Tag: "open"})
-			} else if maCrx == -1 {
-				s.CloseOrders(&strat.ExitReq{Tag: "exit"})
-			}
-		},
-		OnInfoBar: func(s *strat.StratJob, e *ta.BarEnv, pair, tf string) {
-			m, _ := s.More.(*Demo2Sta)
-			ma5 := ta.SMA(e.Close, smlLen)
-			ma20 := ta.SMA(e.Close, bigLen)
-			m.bigDirt = ta.Cross(ma5, ma20)
-		},
+		OnData: strat.RouteData(strat.DataHandlers{
+			Main: func(s *strat.StratJob, _ strat.DataEvent) {
+				e := s.Env
+				m, _ := s.More.(*Demo2Sta)
+				ma5 := ta.SMA(e.Close, smlLen)
+				ma20 := ta.SMA(e.Close, bigLen)
+				maCrx := ta.Cross(ma5, ma20)
+				if maCrx == 1 && m.bigDirt > 0 {
+					s.OpenOrder(&strat.EnterReq{Tag: "open"})
+				} else if maCrx == -1 {
+					s.CloseOrders(&strat.ExitReq{Tag: "exit"})
+				}
+			},
+			Info: func(s *strat.StratJob, data strat.DataEvent) {
+				close := data.Series("close")
+				if close == nil {
+					return
+				}
+				m, _ := s.More.(*Demo2Sta)
+				ma5 := ta.SMA(close, smlLen)
+				ma20 := ta.SMA(close, bigLen)
+				m.bigDirt = ta.Cross(ma5, ma20)
+			},
+		}),
 	}
 }

@@ -25,7 +25,7 @@ body: {
 func PostApi(p *config.RunPolicyConfig) *strat.TradeStrat {
 	return &strat.TradeStrat{
 		WarmupNum: 100,
-		OnBar: func(s *strat.StratJob) {
+		OnData: func(_ *strat.StratJob, _ strat.DataEvent) {
 			// do nothing
 		},
 		OnPostApi: func(client *core.ApiClient, msg map[string]interface{}, jobs map[string]map[string]*strat.StratJob) error {

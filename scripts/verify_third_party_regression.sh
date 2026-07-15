@@ -39,8 +39,8 @@ broad_regex='^(TestRegisterDataSourceRejectsDuplicates|TestRegisterDataSourceRej
 cd "$ROOT_DIR"
 
 run_layer \
-  "Layer 1/4: banstrats example registration, fetch, strategy, and DataFields proof" \
-  go test . ./fundingrate ./openinterest ./longshort -run "$example_regex"
+  "Layer 1/4: banstrats example registration, fetch, strategy, and DataEvent proof" \
+  go test . ./examples/fundingrate ./examples/openinterest ./examples/longshort -run "$example_regex"
 
 run_in_banbot \
   "Layer 2/4: banbot framework bootstrap, ensure, activation, and startup ordering proof" \

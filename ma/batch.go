@@ -53,19 +53,21 @@ func BatchDemo(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		OnStartUp: func(s *strat.StratJob) {
 			s.More = &BatchSta{}
 		},
-		OnBar: func(s *strat.StratJob) {
-			m, _ := s.More.(*BatchSta)
-			if m == nil || !m.smlCorrReady || !m.bigCorrReady {
-				return
-			}
-			if m.bigCorr < 0.5 && m.smlCorr < 0.5 {
-				// 当大小周期的相关度均低于50%时开单。
-				s.OpenOrder(&strat.EnterReq{Tag: "open"})
-			} else if m.smlCorr > 0.9 {
-				// 当前品种小周期相关度高于90%，平仓
-				s.CloseOrders(&strat.ExitReq{Tag: "close"})
-			}
-		},
+		OnData: strat.RouteData(strat.DataHandlers{
+			Main: func(s *strat.StratJob, _ strat.DataEvent) {
+				m, _ := s.More.(*BatchSta)
+				if m == nil || !m.smlCorrReady || !m.bigCorrReady {
+					return
+				}
+				if m.bigCorr < 0.5 && m.smlCorr < 0.5 {
+					// 当大小周期的相关度均低于50%时开单。
+					s.OpenOrder(&strat.EnterReq{Tag: "open"})
+				} else if m.smlCorr > 0.9 {
+					// 当前品种小周期相关度高于90%，平仓
+					s.CloseOrders(&strat.ExitReq{Tag: "close"})
+				}
+			},
+		}),
 		OnBatchJobs: func(jobs []*strat.StratJob) {
 			if len(jobs) < 2 || jobs[0].IsWarmUp {
 				return

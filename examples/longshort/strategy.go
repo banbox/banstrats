@@ -51,40 +51,40 @@ func ExampleStrategy(pol *config.RunPolicyConfig) *strat.TradeStrat {
 				WarmupNum: 2,
 			}}
 		},
-		OnData: func(s *strat.StratJob, fields *strat.DataFields) {
+		OnData: func(s *strat.StratJob, fields strat.DataEvent) {
 			state := EnsureStrategyState(s)
-			if fields == nil {
+			if fields.DataFields == nil {
 				state.LastError = "data fields are nil"
 				return
 			}
-			if orm.NormalizeSeriesSource(fields.Source()) != SourceName {
+			if orm.NormalizeSeriesSource(fields.Source) != SourceName {
 				state.IgnoredEvents++
 				return
 			}
-			if fields.TimeFrame() != DefaultTimeframe {
-				state.LastError = fmt.Sprintf("unexpected timeframe for source=%s sid=%d tf=%s", fields.Source(), fields.Sid(), fields.TimeFrame())
+			if fields.TimeFrame != DefaultTimeframe {
+				state.LastError = fmt.Sprintf("unexpected timeframe for source=%s sid=%d tf=%s", fields.Source, fields.Sid, fields.TimeFrame)
 				return
 			}
-			longAccount, err := dataFieldFloat(fields, FieldLongAccount)
+			longAccount, err := dataFieldFloat(fields.DataFields, FieldLongAccount)
 			if err != nil {
-				state.LastError = fmt.Sprintf("invalid data field %s for source=%s sid=%d tf=%s: %v", FieldLongAccount, fields.Source(), fields.Sid(), fields.TimeFrame(), err)
+				state.LastError = fmt.Sprintf("invalid data field %s for source=%s sid=%d tf=%s: %v", FieldLongAccount, fields.Source, fields.Sid, fields.TimeFrame, err)
 				return
 			}
-			shortAccount, err := dataFieldFloat(fields, FieldShortAccount)
+			shortAccount, err := dataFieldFloat(fields.DataFields, FieldShortAccount)
 			if err != nil {
-				state.LastError = fmt.Sprintf("invalid data field %s for source=%s sid=%d tf=%s: %v", FieldShortAccount, fields.Source(), fields.Sid(), fields.TimeFrame(), err)
+				state.LastError = fmt.Sprintf("invalid data field %s for source=%s sid=%d tf=%s: %v", FieldShortAccount, fields.Source, fields.Sid, fields.TimeFrame, err)
 				return
 			}
-			ratio, err := dataFieldFloat(fields, FieldRatio)
+			ratio, err := dataFieldFloat(fields.DataFields, FieldRatio)
 			if err != nil {
-				state.LastError = fmt.Sprintf("invalid data field longShortRatio for source=%s sid=%d tf=%s: %v", fields.Source(), fields.Sid(), fields.TimeFrame(), err)
+				state.LastError = fmt.Sprintf("invalid data field longShortRatio for source=%s sid=%d tf=%s: %v", fields.Source, fields.Sid, fields.TimeFrame, err)
 				return
 			}
 			state.SeenEvents++
 			state.LastError = ""
-			state.LastSource = fields.Source()
-			state.LastTimeFrame = fields.TimeFrame()
-			state.LastSid = fields.Sid()
+			state.LastSource = fields.Source
+			state.LastTimeFrame = fields.TimeFrame
+			state.LastSid = fields.Sid
 			state.LastLongAccount = longAccount
 			state.LastShortAccount = shortAccount
 			state.LastRatio = ratio
@@ -94,11 +94,11 @@ func ExampleStrategy(pol *config.RunPolicyConfig) *strat.TradeStrat {
 			state.WindowLongAccounts = collectSeriesFloat(fields.Series(FieldLongAccount))
 			state.WindowShortAccounts = collectSeriesFloat(fields.Series(FieldShortAccount))
 			state.WindowCount = len(state.WindowLongAccounts)
-			state.WindowWarmups = append(state.WindowWarmups, fields.IsWarmUp())
+			state.WindowWarmups = append(state.WindowWarmups, fields.IsWarmUp)
 			if size := state.WindowCount; len(state.WindowWarmups) > size {
 				state.WindowWarmups = state.WindowWarmups[len(state.WindowWarmups)-size:]
 			}
-			state.LastEventWarmUp = fields.IsWarmUp()
+			state.LastEventWarmUp = fields.IsWarmUp
 			state.LastJobWarmUp = s.IsWarmUp
 		},
 	}

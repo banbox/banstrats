@@ -101,28 +101,30 @@ func AITrade(pol *config.RunPolicyConfig) *strat.TradeStrat {
 				{Pair: "_cur_", TimeFrame: "1h", WarmupNum: 300},
 			}
 		},
-		OnBar: func(s *strat.StratJob) {
-			m, _ := s.More.(*AIMore)
-			e := s.Env
-			//if !core.IsWarmUp {
-			//	log.Info("OnBar", zap.Int64("time", e.TimeStop))
-			//	defer log.Info("OnBarEnd", zap.Int64("time", e.TimeStop))
-			//}
-			m.feas = onAiFeatures(e, seqNum)
-			o, h, l, c, v := e.Open.Get(0), e.High.Get(0), e.Low.Get(0), e.Close.Get(0), e.Volume.Get(0)
-			info := []float64{float64(e.TimeStart / 1000), o, h, l, c, v}
-			info = append(info, 0, 0, 0)
-			m.info = info
-			m.atr = ta.ATR(e.High, e.Low, e.Close, 30).Get(0)
-		},
-		OnInfoBar: func(s *strat.StratJob, e *ta.BarEnv, pair, tf string) {
-			//if !core.IsWarmUp {
-			//	log.Info("OnInfoBar", zap.Int64("time", e.TimeStop))
-			//	defer log.Info("OnInfoBarEnd", zap.Int64("time", e.TimeStop))
-			//}
-			m, _ := s.More.(*AIMore)
-			m.feasBig = onAiFeatures(e, seqNum)
-		},
+		OnData: strat.RouteData(strat.DataHandlers{
+			Info: func(s *strat.StratJob, data strat.DataEvent) {
+				if data.TimeFrame == "1h" {
+					m, _ := s.More.(*AIMore)
+					if m != nil {
+						m.feasBig = onAiDataFeatures(data.DataFields, seqNum)
+					}
+				}
+			},
+			Main: func(s *strat.StratJob, _ strat.DataEvent) {
+				m, _ := s.More.(*AIMore)
+				e := s.Env
+				//if !core.IsWarmUp {
+				//	log.Info("OnBar", zap.Int64("time", e.TimeStop))
+				//	defer log.Info("OnBarEnd", zap.Int64("time", e.TimeStop))
+				//}
+				m.feas = onAiFeatures(e, seqNum)
+				o, h, l, c, v := e.Open.Get(0), e.High.Get(0), e.Low.Get(0), e.Close.Get(0), e.Volume.Get(0)
+				info := []float64{float64(e.TimeStart / 1000), o, h, l, c, v}
+				info = append(info, 0, 0, 0)
+				m.info = info
+				m.atr = ta.ATR(e.High, e.Low, e.Close, 30).Get(0)
+			},
+		}),
 		OnBatchJobs: func(jobs []*strat.StratJob) {
 			var valids []*strat.StratJob
 			var feas1, feas2, info []float64

@@ -26,8 +26,8 @@ func NewExampleStrategy() *strat.TradeStrat {
 				WarmupNum: 30,
 			}}
 		},
-		OnData: func(job *strat.StratJob, fields *strat.DataFields) {
-			if fields == nil || fields.Source() != SourceName {
+		OnData: func(job *strat.StratJob, fields strat.DataEvent) {
+			if fields.DataFields == nil || fields.Source != SourceName {
 				return
 			}
 			rate := fields.Float64("rate")

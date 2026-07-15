@@ -44,34 +44,46 @@ func InvGrid(pol *config.RunPolicyConfig) *strat.TradeStrat {
 		OnStartUp: func(s *strat.StratJob) {
 			s.More = &GridV1{Grid: NewGrid(initRate, maxAdd, 6, true)}
 		},
-		OnBar: func(s *strat.StratJob) {
-			m, _ := s.More.(*GridV1)
-			if s.OrderNum == 0 {
-				if m.Unit <= 0 || math.IsNaN(m.Unit) || math.IsInf(m.Unit, 0) || m.bigER >= 0.3 || s.IsWarmUp {
+		OnData: strat.RouteData(strat.DataHandlers{
+			Main: func(s *strat.StratJob, _ strat.DataEvent) {
+				m, _ := s.More.(*GridV1)
+				if m == nil {
 					return
 				}
-				m.Open(s)
-			} else {
-				m.CheckPos(s)
-			}
-		},
-		OnInfoBar: func(s *strat.StratJob, e *ta.BarEnv, pair, tf string) {
-			m, _ := s.More.(*GridV1)
-			m.bigER = ta.ER(e.Close, 20).Get(0)
-			atr := ta.ATR(e.High, e.Low, e.Close, lenAtr)
-			atrBase := ta.Lowest(ta.Highest(atr, lenAtr), baseAtrLen).Get(0)
-			ma5 := ta.SMA(e.Close, 10).Get(0)
-			ma20 := ta.SMA(e.Close, 50).Get(0)
-			if s.OrderNum == 0 {
-				// Update grid cell size when not in position
-				// 未持仓时更新网格单元大小
-				m.Unit = atrBase * unitRate
-				m.Dirt = core.OdDirtShort
-				if ma5 < ma20 {
-					m.Dirt = core.OdDirtLong
+				if s.OrderNum == 0 {
+					if m.Unit <= 0 || math.IsNaN(m.Unit) || math.IsInf(m.Unit, 0) || m.bigER >= 0.3 || s.IsWarmUp {
+						return
+					}
+					m.Open(s)
+				} else {
+					m.CheckPos(s)
 				}
-			}
-		},
+			},
+			Info: func(s *strat.StratJob, data strat.DataEvent) {
+				m, _ := s.More.(*GridV1)
+				if m == nil || data.TimeFrame != "15m" {
+					return
+				}
+				high, low, close := data.Series("high"), data.Series("low"), data.Series("close")
+				if high == nil || low == nil || close == nil {
+					return
+				}
+				m.bigER = ta.ER(close, 20).Get(0)
+				atr := ta.ATR(high, low, close, lenAtr)
+				atrBase := ta.Lowest(ta.Highest(atr, lenAtr), baseAtrLen).Get(0)
+				ma5 := ta.SMA(close, 10).Get(0)
+				ma20 := ta.SMA(close, 50).Get(0)
+				if s.OrderNum == 0 {
+					// Update grid cell size when not in position
+					// 未持仓时更新网格单元大小
+					m.Unit = atrBase * unitRate
+					m.Dirt = core.OdDirtShort
+					if ma5 < ma20 {
+						m.Dirt = core.OdDirtLong
+					}
+				}
+			},
+		}),
 		OnOrderChange: func(s *strat.StratJob, od *ormo.InOutOrder, chgType int) {
 			m, _ := s.More.(*GridV1)
 			m.OnOrderChange(s, od, chgType)

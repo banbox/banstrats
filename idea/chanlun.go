@@ -79,56 +79,61 @@ func CL01(pol *config.RunPolicyConfig) *strat.TradeStrat {
 				{Pair: "_cur_", TimeFrame: bigTf, WarmupNum: 300},
 			}
 		},
-		OnBar: func(s *strat.StratJob) {
-			e := s.Env
-			m, _ := s.More.(*CLMore)
-			m.Main.AddBar(e)
-			m.Main.Parse()
-			atr := ta.ATR(e.High, e.Low, e.Close, 14)
-			rsi := ta.RSI(e.Close, 14)
-			if m.Main.OnPoint == nil {
-				m.Main.OnPoint = func(p *ta.CPoint, evt int) {
-					if evt != ta.EvtNew {
-						return
-					}
-					var ods []*ormo.InOutOrder
-					if p.Dirt < 0 {
-						ods = s.LongOrders
-					} else if p.Dirt > 0 {
-						ods = s.ShortOrders
-					} else {
-						return
-					}
-					if len(ods) == 0 {
-						if p.Dirt*m.bDirt < 0 && rsi.Get(0) > 60 {
-							// 当前周期笔方向与大周期笔方向不一致
-							atrVal := atr.Get(0)
-							s.OpenOrder(&strat.EnterReq{
-								Tag:           fmt.Sprintf("op%v", m.bDirt),
-								Short:         m.bDirt < 0,
-								StopLossVal:   atrVal * 2.5,
-								TakeProfitVal: atrVal * 2.5,
-								Log:           true,
-							})
-						}
-					} else {
-						s.CloseOrders(&strat.ExitReq{
-							Tag:  "exit",
-							Dirt: int(m.bDirt),
-							Log:  true,
-						})
+		OnData: strat.RouteData(strat.DataHandlers{
+			Info: func(s *strat.StratJob, data strat.DataEvent) {
+				if data.TimeFrame == bigTf {
+					e := strat.Envs[s.Symbol.Symbol+"_"+bigTf]
+					if e != nil {
+						m, _ := s.More.(*CLMore)
+						m.Big.AddBar(e)
+						m.Big.Parse()
+						ma5 := ta.SMA(e.Close, 5)
+						m.bSubMa = e.Close.Get(0) - ma5.Get(0)
 					}
 				}
-			}
-		},
-		OnInfoBar: func(s *strat.StratJob, e *ta.BarEnv, pair, tf string) {
-			m, _ := s.More.(*CLMore)
-			if tf == bigTf {
-				m.Big.AddBar(e)
-				m.Big.Parse()
-				ma5 := ta.SMA(e.Close, 5)
-				m.bSubMa = e.Close.Get(0) - ma5.Get(0)
-			}
-		},
+			},
+			Main: func(s *strat.StratJob, _ strat.DataEvent) {
+				e := s.Env
+				m, _ := s.More.(*CLMore)
+				m.Main.AddBar(e)
+				m.Main.Parse()
+				atr := ta.ATR(e.High, e.Low, e.Close, 14)
+				rsi := ta.RSI(e.Close, 14)
+				if m.Main.OnPoint == nil {
+					m.Main.OnPoint = func(p *ta.CPoint, evt int) {
+						if evt != ta.EvtNew {
+							return
+						}
+						var ods []*ormo.InOutOrder
+						if p.Dirt < 0 {
+							ods = s.LongOrders
+						} else if p.Dirt > 0 {
+							ods = s.ShortOrders
+						} else {
+							return
+						}
+						if len(ods) == 0 {
+							if p.Dirt*m.bDirt < 0 && rsi.Get(0) > 60 {
+								// 当前周期笔方向与大周期笔方向不一致
+								atrVal := atr.Get(0)
+								s.OpenOrder(&strat.EnterReq{
+									Tag:           fmt.Sprintf("op%v", m.bDirt),
+									Short:         m.bDirt < 0,
+									StopLossVal:   atrVal * 2.5,
+									TakeProfitVal: atrVal * 2.5,
+									Log:           true,
+								})
+							}
+						} else {
+							s.CloseOrders(&strat.ExitReq{
+								Tag:  "exit",
+								Dirt: int(m.bDirt),
+								Log:  true,
+							})
+						}
+					}
+				}
+			},
+		}),
 	}
 }
