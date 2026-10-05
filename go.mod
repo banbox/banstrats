@@ -4,14 +4,15 @@ go 1.24.0
 
 toolchain go1.24.9
 
-//replace github.com/banbox/banbot => ../banbot
+replace github.com/banbox/banbot => ../banbot
 
 //replace github.com/banbox/banexg => ../banexg
 
 require (
-	github.com/banbox/banbot v0.4.0
-	github.com/banbox/banexg v0.2.57-0.20260712040920-c2282fef6c61
-	github.com/banbox/banta v0.3.7
+	github.com/banbox/banbot v0.5.7
+	github.com/banbox/banexg v0.2.65
+	github.com/banbox/banta v0.4.1
+	github.com/spf13/cobra v1.10.2
 	go.uber.org/zap v1.27.0
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/grpc v1.76.0
@@ -62,6 +63,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/goph/emperror v0.17.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -103,6 +105,7 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/slongfield/pyfmt v0.0.0-20220222012616-ea85ff4c361f // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tiendc/go-deepcopy v1.7.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
@@ -130,7 +133,7 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/libc v1.66.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

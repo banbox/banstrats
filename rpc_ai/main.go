@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	biz.FeaGenerators["aifea"] = pubAiFea
+	biz.RegisterFeaGenerator("aifea", pubAiFea)
 	strat.AddStratGroup("rpc_ai", map[string]strat.FuncMakeStrat{
 		"trade1": AITrade,
 	})

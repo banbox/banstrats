@@ -11,11 +11,7 @@ import (
 )
 
 func TestBinanceLongShortStrategyRegistersAndCollectsSubs(t *testing.T) {
-	makeFn, ok := strat.StratMake[StrategyKey()]
-	if !ok {
-		t.Fatalf("expected strategy %s to be registered", StrategyKey())
-	}
-	stgy := makeFn(&config.RunPolicyConfig{Name: StrategyKey()})
+	stgy := strat.New(&config.RunPolicyConfig{Name: StrategyKey()})
 	if stgy == nil {
 		t.Fatalf("expected strategy constructor for %s", StrategyKey())
 	}
@@ -258,11 +254,7 @@ func TestBinanceLongShortDataHubIgnoresLegacyKlineEntriesWithSameSidAndTf(t *tes
 
 func newExampleJob(t *testing.T, symbol string) *strat.StratJob {
 	t.Helper()
-	makeFn, ok := strat.StratMake[StrategyKey()]
-	if !ok {
-		t.Fatalf("expected strategy %s to be registered", StrategyKey())
-	}
-	stgy := makeFn(&config.RunPolicyConfig{Name: StrategyKey()})
+	stgy := strat.New(&config.RunPolicyConfig{Name: StrategyKey()})
 	if stgy == nil {
 		t.Fatalf("expected strategy instance")
 	}

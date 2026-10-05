@@ -1,0 +1,24 @@
+# Overlay for an existing database/exchange/account configuration.
+run_timeframes: [1d]
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: CSMultiFactor
+    engine: factor
+    run_timeframes: [1d]
+    params:
+      k: 3
+      momentum_window: 20
+      skip: 1
+      reversal_window: 3
+      volatility_window: 20
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {long_notional: 0.5, short_notional: 0.5, mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research:
+      labels: []

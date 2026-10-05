@@ -9,6 +9,7 @@ This repo contains free strategies for [banbot](https://github.com/banbox/banbot
 | [idea](idea/README.md)     | Classic Strategy                                          |
 | [grid](grid/README.md)     | Grid trading strategies                                   |
 | [adv](adv/README.md)       | Examples of advanced usage of banbot                      |
+| [examples/crosssection](examples/crosssection/README.md) | Seven cross-sectional/factor examples with reproducible historical reports |
 | [rpc_ai](rpc_ai/README.md) | Interaction with Python via gRPC, supporting ML/DL models |
 
 ## Disclaimer
@@ -51,7 +52,8 @@ You can directly use this code repository as your project, or copy the Go source
 
 Then, you can execute the `go build -o bot` command to compile the banbot and the strategy into a single executable file.
 
+Use `bot backtest`, `bot trade`, and `bot research` directly; `run_policy[].engine` selects the time-series or factor engine. Factor backtests select `--mode`, then `execution.mode`, then default to `events`; the cross-sectional examples explicitly use `weights`. Archive version records with `bot data archive`, and inspect standalone expression specs with `bot validate --spec formula.yml` or `bot explain --spec formula.yml`. All strategy configurations use YAML.
+
 * Then configure the yml file, and execute `bot backtest` to perform the backtest.
 * You can also directly run this file, and then access the WebUI from `http://localhost:8000`.
 * Or check the [command documentation](https://docs.banbot.site/zh-CN/guide/bot_usage) to explore more usage scenarios.
-

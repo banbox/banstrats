@@ -1,0 +1,37 @@
+# Factor expression overlay for an existing database/exchange/account config.
+# Change outputs/lets/params to research a new factor without writing Go.
+run_timeframes: [1d]
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: CSRiskAdjustedMomentum
+    engine: factor
+    run_timeframes: [1d]
+    params: {k: 3}
+    expressions:
+      schema_version: 1
+      timeframe: 1d
+      bindings:
+        kline: {source: kline, timeframe: 1d}
+      params: {momentum_window: 20, skip: 1, reversal_window: 3, volatility_window: 20}
+      lets:
+        price: 'positive(kline.close)'
+        momentum: 'ts.return(ts.lag(factor.price, param.skip), param.momentum_window)'
+        volatility: 'ts.std(ts.return(factor.price, 1), param.volatility_window, 0)'
+      outputs:
+        risk_adjusted: 'cs.zscore(factor.momentum / max(factor.volatility, 1e-6))'
+        reversal: 'cs.zscore(-ts.return(factor.price, param.reversal_window))'
+      combine:
+        method: fixed
+        columns: [risk_adjusted, reversal]
+        weights: {risk_adjusted: 0.8, reversal: 0.2}
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {long_notional: 0.5, short_notional: 0.5, mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research:
+      labels: []

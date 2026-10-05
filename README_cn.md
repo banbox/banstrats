@@ -9,6 +9,7 @@
 | [idea](idea/README_cn.md)     | 经典策略                      |
 | [grid](grid/README_cn.md)     | 网格策略                      |
 | [adv](adv/README_cn.md)       | banbot高级用法示例              |
+| [examples/crosssection](examples/crosssection/README.md) | 7 个截面/多因子策略与可复现历史回测报告 |
 | [rpc_ai](rpc_ai/README_cn.md) | 通过grpc与python交互，支持ML/DL模型 |
 
 ## 免责声明
@@ -35,7 +36,8 @@ banbot 是一个用 Go 语言编写的免费开源加密货币交易机器人。
 
 然后可以执行 `go build -o bot` 命令，将 banbot 和策略编译成一个单一的可执行文件，
 
+回测、交易和研究统一使用 `bot backtest`、`bot trade`、`bot research`，由 `run_policy[].engine` 选择时序或因子引擎。因子回测模式依次取 `--mode`、`execution.mode`、默认 `events`；截面示例显式使用 `weights`。版本数据归档使用 `bot data archive`；独立表达式校验与解释使用 `bot validate --spec formula.yml`、`bot explain --spec formula.yml`。策略配置统一使用 YAML。
+
 * 然后配置yml，执行`bot backtest`即可执行回测
 * 也可直接运行这个文件，就可以从 `http://localhost:8000` 访问 WebUI了
 * 或者查看[命令文档](https://docs.banbot.site/zh-CN/guide/bot_usage)探索更多用法
-

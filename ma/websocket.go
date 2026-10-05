@@ -25,7 +25,7 @@ func ws(p *config.RunPolicyConfig) *strat.TradeStrat {
 		OnWsKline: func(s *strat.StratJob, pair string, k *banexg.Kline) {
 			log.Info(fmt.Sprintf("OnWsKline %v: %v", k.Time, k.Close))
 			s.OpenOrder(&strat.EnterReq{Tag: "long"})
-			_, _, err := biz.GetOdMgr(s.Account).ProcessOrders(s)
+			_, _, err := biz.ProcessJobOrders(s)
 			if err != nil {
 				log.Error("process order fail", zap.Error(err))
 			}
