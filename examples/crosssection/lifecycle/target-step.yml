@@ -1,0 +1,23 @@
+# Move 25% from the previous weight target toward the new target each round.
+run_timeframes: [2h]
+data: {pit_policy: static-approximation}
+execution: {mode: weights, funding_policy: explicit-zero}
+run_policy:
+  - name: CSMomentum
+    engine: factor
+    run_timeframes: [2h]
+    params: {momentum_window: 20, skip: 1}
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio:
+      policy: lifecycle-v1
+      mode: full
+      long_notional: 0.5
+      short_notional: 0.5
+      rebalance: {every_bars: 1}
+      selection: {long_k: 3, short_k: 3}
+      transition: {mode: target-step, alpha: 0.25}
+      allocation: {method: equal}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

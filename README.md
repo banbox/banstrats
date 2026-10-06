@@ -3,13 +3,15 @@
 # Banbot Strategies
 This repo contains free strategies for [banbot](https://github.com/banbox/banbot).
 
+The current examples use the published Banbot **v0.6.0-beta.6** module and require Go **1.26.0+** (toolchain 1.26.8 recommended). Build and test with `GOWORK=off` to verify the released dependencies. For local framework development, use the temporary workspace described in the [lifecycle examples](examples/crosssection/lifecycle/README.md).
+
 | Directory                  | Description                                               |
 |----------------------------|-----------------------------------------------------------|
 | [ma](ma/README.md)         | Example strategies & various examples                     |
 | [idea](idea/README.md)     | Classic Strategy                                          |
 | [grid](grid/README.md)     | Grid trading strategies                                   |
 | [adv](adv/README.md)       | Examples of advanced usage of banbot                      |
-| [examples/crosssection](examples/crosssection/README.md) | Seven cross-sectional/factor examples with reproducible historical reports |
+| [examples/crosssection](examples/crosssection/README.md) | Factor strategies, lifecycle YAML overlays, research parameter resolver and historical reports |
 | [rpc_ai](rpc_ai/README.md) | Interaction with Python via gRPC, supporting ML/DL models |
 
 ## Disclaimer

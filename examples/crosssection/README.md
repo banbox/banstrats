@@ -2,12 +2,16 @@
 
 截面策略在同一时点比较多个资产的因子得分，选择得分较高的资产做多、较低的资产做空。本目录提供动量、反转、低波、趋势和多因子组合等示例，主要使用加密资产的价格与成交量数据。
 
+本目录已适配 Banbot v0.6.0-beta.6，使用 Go 1.26.0+。生命周期配置与参数解析扩展见 [新增示例指南](lifecycle/README.md)。
+
 你可以用两种方式定义因子，两者都使用 `engine: factor`，并支持因子研究、回测和交易：
 
 | 实现方式 | 从哪里开始 | 适合的场景 |
 | --- | --- | --- |
 | Go 因子图 | [strategies.go](strategies.go) 和 [runtime.yml](runtime.yml) | 使用已注册的示例策略，或编写需要自定义处理的因子 |
 | YAML 表达式 | [expressions.yml](expressions.yml) | 直接修改公式、窗口和组合权重，尝试新因子，无须新增 Go 策略或重新编译程序 |
+| 组合生命周期 | [lifecycle/README.md](lifecycle/README.md) | 配置调仓、持仓期限、数量分批退出、cohort、约束与多期限研究 |
+| Go 参数 resolver | [policyresearch/main.go](policyresearch/main.go) | 用已发布研究产物决定每资产规则；可执行的无数据库合成示例 |
 
 如果只是调整公式，建议从 YAML 表达式开始；如果要直接运行下面的经典示例，可以使用已注册的策略名称。
 

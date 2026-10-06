@@ -1,0 +1,23 @@
+# Quantile selection needs no legacy K. Unused budget stays in cash.
+run_timeframes: [2h]
+data: {pit_policy: static-approximation}
+execution: {mode: weights, funding_policy: explicit-zero}
+run_policy:
+  - name: CSMomentum
+    engine: factor
+    run_timeframes: [2h]
+    params: {momentum_window: 20, skip: 1}
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio:
+      policy: lifecycle-v1
+      mode: full
+      long_notional: 0.5
+      short_notional: 0.3
+      rebalance: {every_bars: 1}
+      selection: {long_quantile: 0.2, short_quantile: 0.2, missing_scores: shrink}
+      transition: {mode: direct}
+      allocation: {method: score, reserve_ratio: 0.1, asset_cap: 0.15, net_cap: 0.1, turnover_limit: 0.2}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

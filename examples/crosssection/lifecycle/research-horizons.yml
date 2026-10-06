@@ -1,0 +1,27 @@
+# Research overlay: independent 2h/8h/16h executable-return maturity.
+run_timeframes: [2h]
+data: {pit_policy: static-approximation}
+execution: {mode: weights, funding_policy: explicit-zero}
+run_policy:
+  - name: CSMultiFactor
+    engine: factor
+    run_timeframes: [2h]
+    params: {momentum_window: 20, skip: 1, reversal_window: 3, volatility_window: 20}
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000, max_pending: 64}
+    portfolio:
+      policy: lifecycle-v1
+      mode: full
+      long_notional: 0.5
+      short_notional: 0.5
+      rebalance: {every_bars: 1}
+      selection: {long_k: 3, short_k: 3}
+      transition: {mode: direct}
+      allocation: {method: equal}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research:
+      labels:
+        - {name: 2h, kind: executable-return, horizon: 7200000, periods_per_year: 4383, overlapping: false}
+        - {name: 8h, kind: executable-return, horizon: 28800000, periods_per_year: 1095.75, overlapping: true}
+        - {name: 16h, kind: executable-return, horizon: 57600000, periods_per_year: 547.875, overlapping: true}
