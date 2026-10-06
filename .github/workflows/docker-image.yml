@@ -16,12 +16,17 @@ jobs:
     - name: Extract version from go.mod
       id: get-version
       run: |
-        VERSION=$(grep -oP 'github\.com/banbox/banbot\s+v?\K[0-9]+\.[0-9]+\.[0-9]+' go.mod)
-        if [ -n "$VERSION" ]; then
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-        else
-          echo "version=latest" >> $GITHUB_OUTPUT
-        fi
+        VERSION=$(awk '$1 == "github.com/banbox/banbot" { sub(/^v/, "", $2); print $2; exit }' go.mod)
+        test -n "$VERSION"
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+        {
+          echo 'tags<<EOF'
+          echo "banbot/banbot:${VERSION}"
+          if [[ "$VERSION" != *-* ]]; then
+            echo 'banbot/banbot:latest'
+          fi
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
       shell: bash
 
     - name: Set up Docker Buildx
@@ -38,7 +43,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: |
-          banbot/banbot:latest
-          banbot/banbot:${{ steps.get-version.outputs.version }}
+        tags: ${{ steps.get-version.outputs.tags }}
         no-cache: true

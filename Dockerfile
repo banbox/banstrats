@@ -1,4 +1,4 @@
-FROM golang:1.25.4
+FROM golang:1.26.8
 
 ENV BanDataDir=/ban/data
 ENV BanStratDir=/ban/strats
