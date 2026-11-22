@@ -20,7 +20,7 @@ func TestFundingRateRegistersFuncDataSource(t *testing.T) {
 	if _, ok := src.(*data.FuncDataSource); !ok {
 		t.Fatalf("expected registered source to use data.FuncDataSource, got %T", src)
 	}
-	if src.Info().Binding.Table != "funding_rate" {
+	if src.Info().Binding.Table != "funding_rate_demo" {
 		t.Fatalf("unexpected table: %s", src.Info().Binding.Table)
 	}
 	if err := RegisterDefaultSource(); err == nil {

@@ -13,8 +13,10 @@ import (
 	utils2 "github.com/banbox/banexg/utils"
 )
 
+// SourceName 不能使用内置名 "funding_rate"：banbot v0.7.x 起内置资金费率源已占用该名称，
+// 重复注册会在 init 阶段 panic。
 const (
-	SourceName       = "funding_rate"
+	SourceName       = "funding_rate_demo"
 	DefaultTimeframe = "8h"
 	DefaultLimit     = 1000
 )
@@ -23,7 +25,7 @@ var Info = &orm.SeriesInfo{
 	Name:      SourceName,
 	TimeFrame: DefaultTimeframe,
 	Binding: orm.SeriesBinding{
-		Table:      "funding_rate",
+		Table:      "funding_rate_demo",
 		TimeColumn: "ts",
 		EndColumn:  "end_ms",
 		SIDColumn:  "sid",
