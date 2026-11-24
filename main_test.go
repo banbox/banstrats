@@ -100,3 +100,15 @@ func TestMainRegistersAllStrategies(t *testing.T) {
 		})
 	}
 }
+
+func TestMainRegistersStatArbAndCarryDefinitions(t *testing.T) {
+	// Names are spelled out so this test depends on main.go's registration imports.
+	for _, name := range []string{"SAPairsEthBtc", "SARollingPairs", "SABasketJohansen", "SAResidualPCA", "SAResidualBench", "CarryBasis"} {
+		t.Run(name, func(t *testing.T) {
+			cfg := runner.Config{Definition: name, Factor: research.MomentumVolConfig{Source: "kline", Field: "close", TimeFrame: "1h"}}
+			if _, _, err := runner.CompileDefinition(cfg); err != nil {
+				t.Fatalf("definition %s was not registered: %v", name, err)
+			}
+		})
+	}
+}

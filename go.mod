@@ -7,8 +7,8 @@ toolchain go1.26.8
 //replace github.com/banbox/banexg => ../banexg
 
 require (
-	github.com/banbox/banbot v0.7.8
-	github.com/banbox/banexg v0.2.67
+	github.com/banbox/banbot v0.8.0-beta.2
+	github.com/banbox/banexg v0.2.68
 	github.com/banbox/banta v0.5.0
 	github.com/spf13/cobra v1.10.2
 	go.uber.org/zap v1.28.0
@@ -100,7 +100,7 @@ require (
 	github.com/savsgio/gotils v0.0.0-20250924091648-bce9a52d7761 // indirect
 	github.com/schollz/progressbar/v3 v3.19.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.9 // indirect
-	github.com/shopspring/decimal v1.6.0 // indirect
+	github.com/shopspring/decimal v1.6.0
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/slongfield/pyfmt v0.0.0-20220222012616-ea85ff4c361f // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

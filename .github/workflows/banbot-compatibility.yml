@@ -1,0 +1,47 @@
+name: BanBot compatibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build against BanBot (${{ matrix.banbot }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        banbot: [pinned, main]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/checkout@v6
+        if: matrix.banbot == 'main'
+        with:
+          repository: banbox/banbot
+          ref: main
+          path: .upstream/banbot
+          persist-credentials: false
+      - name: Build and test
+        env:
+          BANBOT: ${{ matrix.banbot }}
+        run: |
+          if [[ "$BANBOT" == main ]]; then
+            go mod edit -replace=github.com/banbox/banbot=./.upstream/banbot
+            export GOFLAGS=-mod=mod
+          else
+            export GOFLAGS=-mod=readonly
+          fi
+          go build ./...
+          go test ./adv

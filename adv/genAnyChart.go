@@ -2,11 +2,7 @@ package adv
 
 import (
 	_ "embed"
-	"flag"
 	"fmt"
-	"github.com/banbox/banbot/orm"
-	"github.com/banbox/banbot/utils"
-	"github.com/banbox/banexg"
 	"math"
 	"os"
 	"path/filepath"
@@ -19,6 +15,9 @@ import (
 	"github.com/banbox/banbot/core"
 	"github.com/banbox/banbot/exg"
 	"github.com/banbox/banbot/opt"
+	"github.com/banbox/banbot/orm"
+	"github.com/banbox/banbot/utils"
+	"github.com/banbox/banexg"
 	"github.com/banbox/banexg/errs"
 	"github.com/banbox/banexg/log"
 	"go.uber.org/zap"
@@ -48,21 +47,11 @@ func genChartDemo() {
 }
 
 // GenAnyChart 生成任意K线图表示例
-func genAnyChart(args []string) error {
-	var exgName, market, symbol, tf, timeRange string
-	var parser = flag.NewFlagSet("", flag.ExitOnError)
-	parser.StringVar(&exgName, "exchange", "binance", "exchange name")
-	parser.StringVar(&market, "market", "spot", "market type: spot/linear/inverse")
-	parser.StringVar(&symbol, "symbol", "BTC/USDT", "symbol")
-	parser.StringVar(&tf, "timeframe", "1h", "time frame: 1m, 5m, 15, 1h, 1d ...")
-	parser.StringVar(&timeRange, "timerange", "20241201-20250101", "start-end")
-
-	err_ := parser.Parse(args)
-	if err_ != nil {
-		return err_
+func genAnyChart(exgName, market, symbol, tf, timeRange string) error {
+	klines, err := getKline(&config.CmdArgs{}, exgName, market, symbol, tf, timeRange)
+	if err != nil {
+		return err
 	}
-
-	klines := getKline(exgName, market, symbol, tf, timeRange)
 
 	// 4. 准备图表数据
 	labels := make([]string, len(klines))
@@ -93,13 +82,13 @@ func genAnyChart(args []string) error {
 	}
 
 	// 7. 保存并打开文件
-	workDir, err_ := os.Getwd()
-	if err_ != nil {
-		return err_
+	workDir, err := os.Getwd()
+	if err != nil {
+		return err
 	}
 	outDir := filepath.Join(workDir, "charts")
-	if err_ = os.MkdirAll(outDir, 0755); err_ != nil {
-		return err_
+	if err = os.MkdirAll(outDir, 0755); err != nil {
+		return err
 	}
 
 	symbolClean := strings.ReplaceAll(strings.ReplaceAll(symbol, "/", ""), ":", "_")
@@ -114,38 +103,35 @@ func genAnyChart(args []string) error {
 	return nil
 }
 
-func getKline(exgName, market, symbol, tf, timeRange string) []*banexg.Kline {
-	// 1. 初始化
-	core.SetRunMode(core.RunModeOther)
-	if err := biz.SetupComs(&config.CmdArgs{}); err != nil {
-		panic(err)
+func getKline(args *config.CmdArgs, exgName, market, symbol, tf, timeRange string) ([]*banexg.Kline, error) {
+	startMS, endMS, parseErr := config.ParseTimeRange(timeRange)
+	if parseErr != nil {
+		return nil, fmt.Errorf("invalid chart time range %q: %w", timeRange, parseErr)
 	}
 
-	// 3. 获取K线数据
+	core.SetRunMode(core.RunModeOther)
+	if err := biz.SetupComs(args); err != nil {
+		return nil, err
+	}
+
 	exchange, err := exg.GetWith(exgName, market, "")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = orm.InitExg(exchange)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	exs, err := orm.GetExSymbol(exchange, symbol)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-
-	startMS, endMS, err_ := config.ParseTimeRange(timeRange)
-	if err_ != nil {
-		panic(err_)
-	}
-	// auto download and get klines
 	_, klines, err := orm.AutoFetchOHLCV(exchange, exs, tf, startMS, endMS, 0, false, nil)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if len(klines) == 0 {
-		panic(errs.NewMsg(errs.CodeRunTime, "no kline data got"))
+		return nil, errs.NewMsg(errs.CodeRunTime, "no kline data got")
 	}
-	return klines
+	return klines, nil
 }

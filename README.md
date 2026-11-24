@@ -3,7 +3,7 @@
 # Banbot Strategies
 This repo contains free strategies for [banbot](https://github.com/banbox/banbot).
 
-The current examples use the published Banbot **v0.6.0-beta.6** module and require Go **1.26.0+** (toolchain 1.26.8 recommended). Build and test with `GOWORK=off` to verify the released dependencies. For local framework development, use the temporary workspace described in the [lifecycle examples](examples/crosssection/lifecycle/README.md).
+The current examples use the published Banbot **v0.7.8** module and require Go **1.26.0+** (toolchain 1.26.8 recommended). Build and test with `GOWORK=off` to verify the released dependencies. For local framework development, use the temporary workspace described in the [lifecycle examples](examples/crosssection/lifecycle/README.md).
 
 | Directory                  | Description                                               |
 |----------------------------|-----------------------------------------------------------|
@@ -12,6 +12,12 @@ The current examples use the published Banbot **v0.6.0-beta.6** module and requi
 | [grid](grid/README.md)     | Grid trading strategies                                   |
 | [adv](adv/README.md)       | Examples of advanced usage of banbot                      |
 | [examples/crosssection](examples/crosssection/README.md) | Factor strategies, lifecycle YAML overlays, research parameter resolver and historical reports |
+| [examples/statarb](examples/statarb/README.md) | Statistical arbitrage: fixed and rolling pairs, Johansen baskets, PCA/benchmark residual s-score |
+| [examples/carry](examples/carry/README.md) | Spot + perpetual basis carry via `RegisterPairs` (multi-market `extra_markets`) |
+| [examples/tsfeatures](examples/tsfeatures/README.md) | Time-series feature demos: risk sizing, bracket orders, session/calendar helpers, built-in derivatives data, batch rebalance |
+| examples/fundingrate | Custom funding-rate data source and strategy (uses a source name distinct from the built-in `funding_rate`) |
+| examples/longshort | Binance top long/short position ratio as a custom data source with a strategy |
+| examples/openinterest | Binance open-interest history as a custom data source stored via `KLineSeriesStore` |
 | [rpc_ai](rpc_ai/README.md) | Interaction with Python via gRPC, supporting ML/DL models |
 
 ## Disclaimer

@@ -1,0 +1,35 @@
+# Overlay for an existing database/exchange/account configuration.
+# Two 3-leg baskets traded on the rolling Johansen spread. New entries need a Johansen rank >= 1
+# at the chosen confidence level; weights are frozen at entry. Both baskets are Go literals.
+run_timeframes: [1h]
+pairs: ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'BNB/USDT:USDT', 'SOL/USDT:USDT', 'AVAX/USDT:USDT', 'NEAR/USDT:USDT']
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: SABasketJohansen
+    engine: factor
+    run_timeframes: [1h]
+    params:
+      window: 240
+      differenceLags: 1
+      confidence: 0.95
+      requireCoint: 1
+      ols: 0
+      entry: 2
+      exit: 0.5
+      stop: 4
+      maxHold: 96
+      minHalfLife: 2
+      maxHalfLife: 72
+      driftBand: 0.03
+      inverseVol: 1
+      maxGross: 1
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

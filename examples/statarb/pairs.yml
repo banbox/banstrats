@@ -1,0 +1,36 @@
+# Overlay for an existing database/exchange/account configuration.
+# Two fixed log-OLS pairs (ETH on BTC, SOL on ETH) with inverse-vol sizing, entry-frozen
+# hedge ratio, beta guard, half-life / correlation / Hurst gates and a leg-volatility entry filter.
+# The pair legs are Go literals; the pool below only has to contain them.
+run_timeframes: [1h]
+pairs: ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'SOL/USDT:USDT']
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: SAPairsEthBtc
+    engine: factor
+    run_timeframes: [1h]
+    params:
+      window: 120
+      entry: 2
+      exit: 0.5
+      stop: 4
+      maxHold: 0
+      gross: 0.5
+      minBeta: 0.3
+      inverseVol: 1
+      driftBand: 0.02
+      dynamicExitZ: 0
+      maxHalfLife: 48
+      minCorr: 0.6
+      maxHurst: 0.5
+      maxLegVol: 0.03
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

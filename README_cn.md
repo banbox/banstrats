@@ -3,7 +3,7 @@
 # Banbot 策略
 这个代码仓库包含了适用于 [banbot](https://github.com/banbox/banbot) 的免费策略。
 
-当前示例使用已发布的 Banbot **v0.6.0-beta.6** 模块，要求 Go **1.26.0+**，推荐工具链 1.26.8。验收远程依赖时设置 `GOWORK=off` 后构建和测试；本地框架联调使用 [生命周期示例](examples/crosssection/lifecycle/README.md) 中的临时 workspace。
+当前示例使用已发布的 Banbot **v0.7.8** 模块，要求 Go **1.26.0+**，推荐工具链 1.26.8。验收远程依赖时设置 `GOWORK=off` 后构建和测试；本地框架联调使用 [生命周期示例](examples/crosssection/lifecycle/README.md) 中的临时 workspace。
 
 | 文件夹                           | 说明                        |
 |-------------------------------|---------------------------|
@@ -12,6 +12,12 @@
 | [grid](grid/README_cn.md)     | 网格策略                      |
 | [adv](adv/README_cn.md)       | banbot高级用法示例              |
 | [examples/crosssection](examples/crosssection/README.md) | 截面/多因子策略、生命周期 YAML、研究参数 resolver 与历史报告 |
+| [examples/statarb](examples/statarb/README.md) | 统计套利：固定/滚动配对、Johansen 篮子、PCA/基准残差 s-score |
+| [examples/carry](examples/carry/README.md) | 期现基差套利：现货 + 永续（`RegisterPairs` 与 `extra_markets`） |
+| [examples/tsfeatures](examples/tsfeatures/README_cn.md) | 时序新特性示例：风险定仓与回撤保护、括号订单、交易时段/日历原语、内置衍生品数据、批量调仓 |
+| examples/fundingrate | 自定义资金费率数据源与策略（数据源名称不得与内置 `funding_rate` 重名） |
+| examples/longshort | 币安大户多空持仓比自定义数据源与策略 |
+| examples/openinterest | 币安持仓量历史自定义数据源，经 `KLineSeriesStore` 存储 |
 | [rpc_ai](rpc_ai/README_cn.md) | 通过grpc与python交互，支持ML/DL模型 |
 
 ## 免责声明

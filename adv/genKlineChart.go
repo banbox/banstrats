@@ -20,21 +20,13 @@ import (
 //go:embed klinechart.html
 var klineTpl []byte
 
-func genKlineChart(args *config.CmdArgs) *errs.Error {
-	exgName, market, timeRange := "binance", "spot", "20241001-20250101"
-	symbol := args.RawPairs
-	if symbol == "" {
-		symbol = "BTC/USDT"
-	}
-	tf := args.RawTimeFrames
-	if tf == "" {
-		tf = "1d"
-	}
-	if args.TimeRange != "" {
-		timeRange = args.TimeRange
+func genKlineChart(args *config.CmdArgs, symbol, tf, timeRange string) error {
+	const exgName, market = "binance", "spot"
+	klines, fetchErr := getKline(args, exgName, market, symbol, tf, timeRange)
+	if fetchErr != nil {
+		return fetchErr
 	}
 	warmUpNum := 20
-	klines := getKline(exgName, market, symbol, tf, timeRange)
 
 	// 4. 准备图表数据
 	klineData := make([]map[string]interface{}, len(klines))

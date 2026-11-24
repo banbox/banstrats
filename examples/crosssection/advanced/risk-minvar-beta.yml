@@ -1,0 +1,38 @@
+# Overlay for an existing database/exchange/account configuration.
+# Minimum-variance sizing with a market-beta cap. The reserved `beta` output (rolling beta of each
+# contract to BTC, read through ref.field) feeds `beta_cap`; BTC itself need not be tradable.
+run_timeframes: [1d]
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: CSBetaCappedMinVar
+    engine: factor
+    run_timeframes: [1d]
+    expressions:
+      schema_version: 1
+      timeframe: 1d
+      bindings:
+        kline: {source: kline, timeframe: 1d}
+      params: {momentum_window: 30, beta_window: 60}
+      lets:
+        price: 'positive(kline.close)'
+      outputs:
+        momentum: 'cs.zscore(ts.return(factor.price, param.momentum_window))'
+        beta: 'ts.beta(ts.return(factor.price, 1), ts.return(ref.field("BTC/USDT:USDT", "close"), 1), param.beta_window)'
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio:
+      policy: lifecycle-v1
+      mode: full
+      long_notional: 0.5
+      short_notional: 0.5
+      selection: {long_k: 5, short_k: 5}
+      rebalance: {every_bars: 1}
+      # Long-only-per-side minimum variance on a 90-bar covariance; the book's net beta stays within 0.1.
+      allocation: {method: min-variance, risk_window: 90, shrinkage: 0.15, beta_cap: 0.1, net_cap: 0.1}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

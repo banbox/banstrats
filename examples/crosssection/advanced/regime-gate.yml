@@ -1,0 +1,40 @@
+# Overlay for an existing database/exchange/account configuration.
+# Absolute score gate + dynamic exposure scaling. Scores are cross-sectional percentile ranks
+# centred on zero; a long needs score >= 0.25 and a short <= -0.25, so a weak market leaves
+# slots in cash. The reserved `exposure_scale` output multiplies both sides' notional: market
+# breadth (share of contracts above their 50-bar mean) when BTC's daily close is above its
+# 100-day mean, otherwise 25% of the budget. The BTC trend runs on native daily bars (mtf.asof)
+# aligned to the 4h decision grid without look-ahead.
+run_timeframes: [4h]
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: CSRegimeGated
+    engine: factor
+    run_timeframes: [4h]
+    params: {k: 4}
+    expressions:
+      schema_version: 1
+      timeframe: 4h
+      bindings:
+        kline: {source: kline, timeframe: 4h}
+      params: {rank_window: 42, breadth_window: 50}
+      outputs:
+        score: 'cs.pct_rank(ts.return(positive(kline.close), param.rank_window)) - 0.5'
+        exposure_scale: 'where(mtf.asof("1d", ref.field("BTC/USDT:USDT", "close") > ts.sma(ref.field("BTC/USDT:USDT", "close"), 100)), cs.mean(kline.close > ts.sma(kline.close, param.breadth_window)), 0.25)'
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio:
+      mode: full
+      long_notional: 0.5
+      short_notional: 0.5
+      long_min_score: 0.25
+      short_max_score: -0.25
+      # cash: each passing name gets side_notional / k and the rest stays in cash.
+      unfilled_slot_policy: cash
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

@@ -179,3 +179,28 @@ YAML 模板中的 `CSRiskAdjustedMomentum` 是额外的组合示例：80% 风险
 连接交易账户前，基础配置还需要真实合约单位、精度和账户执行绑定。两个模板的 `explicit-zero` 表示资金费率按零处理，使用永续合约交易时应配置真实资金费率来源；手续费、滑点和名义敞口也需要按自己的市场设置。多策略共用账户时，应明确分配各策略的 `capital_weight`。
 
 本目录示例覆盖价格与成交量因子。股票价值、盈利质量、财务因子或资金费率因子需要对应的数据源。
+
+## 进阶组合示例（`advanced/`）
+
+[advanced/](advanced/) 下是六个只含 YAML 的覆盖文件，演示 v0.7.x 新增的组合与表达式能力。用法与上面的模板相同，需要与自己的基础配置一起使用，不需要新增 Go 代码：
+
+```sh
+./bot backtest --config your-runtime.yml --config examples/crosssection/advanced/liquid-top-erc.yml
+```
+
+| 文件 | 演示的能力 |
+| --- | --- |
+| [liquid-top-erc.yml](advanced/liquid-top-erc.yml) | 点时滚动流动性宇宙 `universe: rolling_liquid_top`（根级 `pairs` 为候选超集，每 30 天按当时可见成交额重选前 30，上市不足 14 天不入选）、`allocation.method: erc` 等风险贡献、`rebalance.drift_threshold` 免调仓缓冲、保留输出列 `volatility` 的自动绑定 |
+| [risk-hrp-exits.yml](advanced/risk-hrp-exits.yml) | `allocation.method: hrp` 层次风险平价、`allocation.drift_threshold`、混合退出 `holding.stop_loss_pct` 与 `trailing_stop_pct`（非调仓日也逐持仓检查）、`cooldown_bars` 和按品种覆盖 `by_asset`（显式 `0` 取消该品种的追踪止损） |
+| [risk-minvar-beta.yml](advanced/risk-minvar-beta.yml) | `allocation.method: min-variance` 最小方差、`beta_cap` / `net_cap`、保留输出列 `beta`（用 `ref.field("BTC/USDT:USDT", "close")` 读取基准品种，即使 BTC 不在交易池也会预加载） |
+| [neutral-sector-quantile.yml](advanced/neutral-sector-quantile.yml) | 内置加密赛道中性化 `cs.sector_zscore`（按符号归入 L1、L2、DeFi、AI_DePin、Meme、Gaming、Infra、Other，无需外部表）和按流动性分桶的 `group.quantile_zscore(x, metric, n)` |
+| [regime-gate.yml](advanced/regime-gate.yml) | 绝对分数门控 `long_min_score` / `short_max_score` 与 `unfilled_slot_policy: cash`（未选满的名额留现金），保留输出列 `exposure_scale` 动态缩放敞口，`cs.mean` 市场宽度，`mtf.asof("1d", ...)` 在 4h 决策网格上无前视地使用日线 BTC 趋势，`where(cond, a, b)` 条件选择 |
+| [operators.yml](advanced/operators.yml) | 新算子组合：`cs.pct_rank`、多阶段 CS→TS→CS（`cs.zscore(ts.sma(cs.pct_rank(...), n))`）、滚动统计 `ts.skew` / `ts.slope` / `ts.rsquare`，以及 `where` 条件逐点选择 |
+
+使用要点：
+
+- `volatility`、`beta`、`exposure_scale` 是保留输出列，不会进入打分合成；`risk_window` 内协方差样本不足时，风险配权会回退到按波动率倒数或等权。
+- 配置了 `rebalance`、`selection`、`holding`、`transition`、`allocation` 的 `portfolio` 使用 `lifecycle-v1`，规则见 [lifecycle/README.md](lifecycle/README.md)。`regime-gate.yml` 和 `neutral-sector-quantile.yml`、`operators.yml` 走默认的 top/bottom-K 路径。
+- 滚动宇宙的 `top_n`、窗口等按日历天或 bar 数计，改 `run_timeframes` 时请一并检查。`liquid-top-erc.yml` 需要候选池里的合约都有足够的日线历史。
+- 这些文件的窗口和阈值只是演示用的起点，没有经过优化。它们通过单元测试验证：由统一配置加载器解析，重建因子配置并做静态校验，再用合成数据检查风险配权的排序、止损、门控和中性化性质；没有用真实行情回测过。
+- 统计套利（固定/滚动配对、篮子、残差 s-score）见 [../statarb/README.md](../statarb/README.md)，期现基差见 [../carry/README.md](../carry/README.md)。

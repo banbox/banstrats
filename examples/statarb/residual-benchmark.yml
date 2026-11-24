@@ -1,0 +1,31 @@
+# Overlay for an existing database/exchange/account configuration.
+# Same s-score engine, but the systematic factors are the BTC and ETH returns (both Go literals,
+# both must be in the pool). Static pool, no rolling universe.
+run_timeframes: [1h]
+pairs: ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'BNB/USDT:USDT', 'SOL/USDT:USDT', 'XRP/USDT:USDT', 'DOGE/USDT:USDT', 'ADA/USDT:USDT', 'AVAX/USDT:USDT', 'LINK/USDT:USDT', 'DOT/USDT:USDT', 'NEAR/USDT:USDT', 'LTC/USDT:USDT']
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: SAResidualBench
+    engine: factor
+    run_timeframes: [1h]
+    params:
+      window: 60
+      entryS: 1.25
+      exitS: 0.5
+      stopS: 3
+      maxHold: 48
+      maxHalfLife: 30
+      inverseSigma: 1
+      targetGross: 1
+      maxWeight: 0.2
+      driftBand: 0.02
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

@@ -1,0 +1,37 @@
+# Overlay for an existing database/exchange/account configuration.
+# Two neutralised momentum factors: demeaned inside the built-in crypto sectors (L1, L2, DeFi,
+# AI_DePin, Meme, Gaming, Infra, Other; derived from the symbol, no external table) and within
+# liquidity terciles ranked by 30-bar average kline quote volume.
+run_timeframes: [1d]
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: CSNeutralMomentum
+    engine: factor
+    run_timeframes: [1d]
+    params: {k: 3}
+    expressions:
+      schema_version: 1
+      timeframe: 1d
+      bindings:
+        kline: {source: kline, timeframe: 1d}
+      params: {momentum_window: 20, liquidity_window: 30}
+      lets:
+        momentum: 'ts.return(positive(kline.close), param.momentum_window)'
+        liquidity: 'ts.sma(kline.quote, param.liquidity_window)'
+      outputs:
+        sector_momentum: 'cs.sector_zscore(factor.momentum)'
+        size_momentum: 'group.quantile_zscore(factor.momentum, factor.liquidity, 3)'
+      combine:
+        method: fixed
+        columns: [sector_momentum, size_momentum]
+        weights: {sector_momentum: 0.6, size_momentum: 0.4}
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {long_notional: 0.5, short_notional: 0.5, mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

@@ -1,0 +1,30 @@
+# Overlay for an existing database/exchange/account configuration (Binance-style spot + USDT-M
+# perpetuals). Short the rich perpetual basis against long spot, never short spot.
+# Needs spot and perpetual klines plus funding_rate data in the database for the backtest window.
+market_type: linear
+extra_markets: [spot]
+run_timeframes: [1h]
+pairs: ['BTC/USDT', 'BTC/USDT:USDT', 'ETH/USDT', 'ETH/USDT:USDT']
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: storage
+run_policy:
+  - name: CarryBasis
+    engine: factor
+    run_timeframes: [1h]
+    params:
+      window: 168
+      entry: 2
+      exit: 0.5
+      stop: 5
+      maxHold: 72
+      gross: 0.5
+      driftBand: 0.01
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: storage}
+    research: {labels: []}

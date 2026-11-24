@@ -1,0 +1,45 @@
+# Overlay for an existing database/exchange/account configuration.
+# Tour of the newer expression operators in one score:
+#   cs.pct_rank      normalised cross-sectional rank in [0, 1]
+#   ts.sma(cs...)    multi-stage CS -> TS: smooth the rank over time to cut turnover
+#   ts.skew, ts.slope, ts.rsquare   rolling statistics
+#   where(...)       conditional pointwise selection (cond valid => only the chosen branch must be valid)
+run_timeframes: [1d]
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: CSOperatorTour
+    engine: factor
+    run_timeframes: [1d]
+    params: {k: 3}
+    expressions:
+      schema_version: 1
+      timeframe: 1d
+      bindings:
+        kline: {source: kline, timeframe: 1d}
+      params: {window: 30, smooth: 5}
+      lets:
+        price: 'positive(kline.close)'
+        daily: 'ts.return(factor.price, 1)'
+      outputs:
+        # 5-day average of the daily percentile rank of 30-day momentum (CS -> TS -> CS), standardised.
+        smooth_rank: 'cs.zscore(ts.sma(cs.pct_rank(ts.return(factor.price, param.window)), param.smooth))'
+        # Lottery demand: penalise positive return skewness.
+        low_skew: 'cs.zscore(-ts.skew(factor.daily, param.window))'
+        # Trend quality: log-price slope scaled by how straight the path is (R squared).
+        trend_quality: 'cs.zscore(ts.slope(log(factor.price), param.window) * ts.rsquare(log(factor.price), param.window))'
+        # Only trust the trend when today's volume is above its 20-day norm; otherwise half weight.
+        volume_confirmed_trend: 'cs.zscore(ts.return(factor.price, 10)) * where(ts.zscore(kline.volume, 20) > 0, 1, 0.5)'
+      combine:
+        method: fixed
+        columns: [smooth_rank, low_skew, trend_quality, volume_confirmed_trend]
+        weights: {smooth_rank: 1, low_skew: 0.3, trend_quality: 0.4, volume_confirmed_trend: 0.3}
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {long_notional: 0.5, short_notional: 0.5, mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

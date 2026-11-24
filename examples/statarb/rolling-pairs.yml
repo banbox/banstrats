@@ -1,0 +1,40 @@
+# Overlay for an existing database/exchange/account configuration.
+# Point-in-time pair formation: every `reselect` bars the best `pairCount` pairs of the pool
+# below are re-selected by Engle-Granger cointegration on the last `formation` bars.
+# No symbol literal in Go: replace the pool with your own candidates.
+run_timeframes: [1h]
+pairs: ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'BNB/USDT:USDT', 'SOL/USDT:USDT', 'AVAX/USDT:USDT', 'NEAR/USDT:USDT', 'LINK/USDT:USDT', 'ADA/USDT:USDT']
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: SARollingPairs
+    engine: factor
+    run_timeframes: [1h]
+    params:
+      formation: 240
+      reselect: 120
+      pairCount: 4
+      maxPerSymbol: 2
+      distance: 0
+      maxAdf: -2.86
+      adfLags: 1
+      minCorr: 0.6
+      minHalfLife: 2
+      window: 120
+      entry: 2
+      exit: 0.5
+      stop: 4
+      maxHold: 60
+      driftBand: 0.02
+      inverseVol: 1
+      onlineHalfLife: 1
+      handoffImmediate: 0
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}

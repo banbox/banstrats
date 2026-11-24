@@ -1,0 +1,40 @@
+# Overlay for an existing database/exchange/account configuration.
+# Cross-sectional PCA residual s-score (Avellaneda-Lee): dollar-neutral and factor-beta-neutral.
+# The candidate superset below is narrowed point-in-time to the 20 most liquid contracts
+# (rolling_liquid_top, re-selected every 30 days from kline quote volume visible at that time).
+run_timeframes: [1h]
+pairs: ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'BNB/USDT:USDT', 'SOL/USDT:USDT', 'XRP/USDT:USDT', 'DOGE/USDT:USDT', 'ADA/USDT:USDT', 'AVAX/USDT:USDT', 'LINK/USDT:USDT', 'DOT/USDT:USDT', 'NEAR/USDT:USDT', 'LTC/USDT:USDT', 'ATOM/USDT:USDT', 'UNI/USDT:USDT', 'AAVE/USDT:USDT', 'ARB/USDT:USDT', 'OP/USDT:USDT', 'APT/USDT:USDT', 'SUI/USDT:USDT', 'INJ/USDT:USDT', 'FIL/USDT:USDT', 'ETC/USDT:USDT']
+data:
+  pit_policy: static-approximation
+execution:
+  mode: weights
+  funding_policy: explicit-zero
+run_policy:
+  - name: SAResidualPCA
+    engine: factor
+    run_timeframes: [1h]
+    params:
+      window: 60
+      numFactors: 3
+      entryS: 1.25
+      exitS: 0.5
+      stopS: 3
+      maxHold: 48
+      maxHalfLife: 30
+      inverseSigma: 1
+      targetGross: 1
+      maxWeight: 0.15
+      driftBand: 0.02
+    universe:
+      mode: rolling_liquid_top
+      top_n: 20
+      lookback_days: 30
+      min_listing_days: 14
+      reconstitute_days: 30
+      always_include: ['BTC/USDT:USDT', 'ETH/USDT:USDT']
+    prices: {source: kline, timeframe: 1m, field: close}
+    decision: {latency_ms: 1, expiry_ms: 120000}
+    portfolio: {mode: full}
+    manifest:
+      costs: {fee_rate: 0.0005, slippage_rate: 0.0005, funding_policy: explicit-zero}
+    research: {labels: []}
