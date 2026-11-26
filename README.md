@@ -3,7 +3,7 @@
 # Banbot Strategies
 This repo contains free strategies for [banbot](https://github.com/banbox/banbot).
 
-The current examples use the published Banbot **v0.7.8** module and require Go **1.26.0+** (toolchain 1.26.8 recommended). Build and test with `GOWORK=off` to verify the released dependencies. For local framework development, use the temporary workspace described in the [lifecycle examples](examples/crosssection/lifecycle/README.md).
+The current examples use the Banbot version pinned in [go.mod](go.mod) and require Go **1.26.0+** (toolchain 1.26.8 recommended). Build and test with `GOWORK=off` to verify the released dependencies. For local framework development, use the temporary workspace described in the [lifecycle examples](examples/crosssection/lifecycle/README.md).
 
 | Directory                  | Description                                               |
 |----------------------------|-----------------------------------------------------------|

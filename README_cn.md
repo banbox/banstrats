@@ -3,7 +3,7 @@
 # Banbot 策略
 这个代码仓库包含了适用于 [banbot](https://github.com/banbox/banbot) 的免费策略。
 
-当前示例使用已发布的 Banbot **v0.7.8** 模块，要求 Go **1.26.0+**，推荐工具链 1.26.8。验收远程依赖时设置 `GOWORK=off` 后构建和测试；本地框架联调使用 [生命周期示例](examples/crosssection/lifecycle/README.md) 中的临时 workspace。
+当前示例使用 [go.mod](go.mod) 中指定的 Banbot 版本，要求 Go **1.26.0+**，推荐工具链 1.26.8。验收远程依赖时设置 `GOWORK=off` 后构建和测试；本地框架联调使用 [生命周期示例](examples/crosssection/lifecycle/README.md) 中的临时 workspace。
 
 | 文件夹                           | 说明                        |
 |-------------------------------|---------------------------|
